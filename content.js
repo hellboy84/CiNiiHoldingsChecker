@@ -38,9 +38,13 @@ function extractHoldingsData() {
 }
 
 // ポップアップからのメッセージを受信して所蔵データを返す
-chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-  if (request.action === 'getHoldingsData') {
-    sendResponse(extractHoldingsData());
-  }
-  return true; // 非同期レスポンスを許可
-});
+// executeScript で複数回注入されても onMessage リスナーが重複しないようガードする
+if (!window.__ciniiCheckerInjected) {
+  window.__ciniiCheckerInjected = true;
+  chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    if (request.action === 'getHoldingsData') {
+      sendResponse(extractHoldingsData());
+    }
+    return true; // 非同期レスポンスを許可
+  });
+}

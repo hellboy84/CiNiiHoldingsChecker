@@ -131,6 +131,11 @@ async function loadCurrentPage() {
       return;
     }
 
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['content.js'],
+    });
+
     const data = await chrome.tabs.sendMessage(tab.id, { action: 'getHoldingsData' });
 
     if (!data) {
