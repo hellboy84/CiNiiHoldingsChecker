@@ -72,9 +72,14 @@ This extension stores the following data locally in the browser (`chrome.storage
 
 **No data is ever sent to any external server.**
 
+## 謝辞
+
+新潟大学の久田拓未様が講演で発表されていたアイデアを元にして作成させていただきました。
+
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
