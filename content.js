@@ -48,3 +48,4 @@ if (!window.__ciniiCheckerInjected) {
     return true; // 非同期レスポンスを許可
   });
 }
+
