@@ -1,4 +1,4 @@
-# CiNii Holdings Checker (CiNii所属チェッカー)
+# CiNii Holdings Checker (CiNii所蔵チェッカー)
 
 > **A Chrome extension that searches the holdings of multiple journals on CiNii Books (https://ci.nii.ac.jp/books/) and extracts libraries that hold all specified volumes/issues. No data is ever sent to any external server.**
 
@@ -75,6 +75,7 @@ This extension stores the following data locally in the browser (`chrome.storage
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
