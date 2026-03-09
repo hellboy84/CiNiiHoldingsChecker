@@ -57,20 +57,7 @@ CiNiiHoldings_extension/
 
 ## プライバシー / Privacy
 
-本拡張機能は以下のデータをブラウザ内（`chrome.storage.local`）に保存します：
-
-- 雑誌タイトル・ URL
-- ユーザーが指定した巻号
-- 所蔵館名・図書館コード
-
-**外部サーバーへのデータ送信は一切行いません。**
-
-This extension stores the following data locally in the browser (`chrome.storage.local`):
-- Journal titles and URLs
-- Volume/issue numbers specified by the user
-- Library names and library codes
-
-**No data is ever sent to any external server.**
+詳細は [プライバシーポリシー / Privacy Policy](PRIVACY_POLICY.md) をご覧ください。
 
 ## 謝辞
 
@@ -83,6 +70,7 @@ This extension stores the following data locally in the browser (`chrome.storage
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
