@@ -126,7 +126,7 @@ async function loadCurrentPage() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    if (!tab.url || !/https?:\/\/ci\.nii\.ac\.jp\/ncid\//.test(tab.url)) {
+    if (!tab) {
       showStatus('CiNii Booksの雑誌詳細ページを開いてください', 'warning');
       return;
     }
