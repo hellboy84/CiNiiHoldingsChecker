@@ -25,7 +25,7 @@ Chrome（Chromium 系ブラウザ全般）
 3. 右上の「**デベロッパーモード**」をオンにする
 4. 「**パッケージ化されていない拡張機能を読み込む**」をクリック
 5. 解凍したフォルダを選択する
-6. 拡張機能を有効にする(メニュー「拡張機能>拡張機能を管理」から有効化)
+6. メニュー「拡張機能>拡張機能を管理」から有効化する
 7. ツールバーにピン留めする
 
 ## 使い方
@@ -75,6 +75,7 @@ This extension stores the following data locally in the browser (`chrome.storage
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
