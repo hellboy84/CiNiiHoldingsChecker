@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CiNii 共通所蔵館チェッカー</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>CiNii 共通所蔵館チェッカー</h1>
+
+    <!-- 現在のページ情報 -->
+    <section class="section">
+      <h2>現在のページ</h2>
+      <div id="status" class="status"></div>
+      <p id="journal-title" class="journal-title"></p>
+
+      <div class="volume-input-row">
+        <label>確認する巻号：</label>
+        <input
+          type="number"
+          id="target-volume"
+          min="1"
+          step="1"
+          placeholder="巻"
+        />
+        <span>巻</span>
+        <input
+          type="number"
+          id="target-issue"
+          min="1"
+          step="1"
+          placeholder="号（任意）"
+        />
+        <span>号</span>
+      </div>
+      <p class="volume-hint">※号を空白にすると巻単位で照合</p>
+
+      <button id="add-btn" class="btn btn-primary" disabled>
+        コレクションに追加
+      </button>
+    </section>
+
+    <!-- 登録済み雑誌リスト -->
+    <section class="section">
+      <h2>登録済み雑誌</h2>
+      <div id="journal-list">
+        <p class="empty-message">登録済みの雑誌はありません</p>
+      </div>
+    </section>
+
+    <!-- 共通所蔵館の計算・結果 -->
+    <section class="section">
+      <button id="calc-btn" class="btn btn-success" disabled>
+        共通所蔵館を計算
+      </button>
+      <div id="result"></div>
+    </section>
+
+    <!-- 全データクリア -->
+    <section class="section clear-section">
+      <button id="clear-all-btn" class="btn btn-danger">全データをクリア</button>
+    </section>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

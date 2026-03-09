@@ -1,0 +1,388 @@
+/* ─── リセット & 基本 ──────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 600px;
+}
+
+body {
+  font-family: 'Meiryo', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  width: 420px;
+  height: 600px;
+  overflow-y: auto;
+  background: #f0f4f8;
+  color: #333;
+}
+
+/* ─── コンテナ ─────────────────────────────────────────────────────────────── */
+
+.container {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ─── 見出し ───────────────────────────────────────────────────────────────── */
+
+h1 {
+  font-size: 14px;
+  font-weight: bold;
+  color: #1a4f8a;
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #1a4f8a;
+}
+
+h2 {
+  font-size: 11px;
+  font-weight: bold;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+/* ─── セクション ───────────────────────────────────────────────────────────── */
+
+.section {
+  background: #fff;
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid #dde3ea;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ─── ステータス表示 ────────────────────────────────────────────────────────── */
+
+.status {
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.status.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.status.warning {
+  background: #fff8e1;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+}
+
+.status.error {
+  background: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #ef9a9a;
+}
+
+/* ─── 雑誌タイトル ──────────────────────────────────────────────────────────── */
+
+.journal-title {
+  font-weight: bold;
+  color: #1a4f8a;
+  font-size: 13px;
+  margin-bottom: 10px;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+/* ─── 巻号入力 ─────────────────────────────────────────────────────────────── */
+
+.volume-input-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.volume-input-row label {
+  font-size: 12px;
+  flex-shrink: 0;
+  color: #555;
+}
+
+.volume-input-row input[type='number'] {
+  width: 64px;
+  padding: 5px 6px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.volume-input-row input[type='number']::-webkit-inner-spin-button,
+.volume-input-row input[type='number']::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+.volume-input-row input[type='number']:focus {
+  outline: none;
+  border-color: #1a4f8a;
+  box-shadow: 0 0 0 2px rgba(26, 79, 138, 0.15);
+}
+
+.volume-input-row span {
+  font-size: 12px;
+  color: #555;
+}
+
+.volume-hint {
+  font-size: 10px;
+  color: #aaa;
+  margin-bottom: 10px;
+}
+
+/* ─── ボタン ───────────────────────────────────────────────────────────────── */
+
+.btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: background 0.15s, opacity 0.15s;
+  line-height: 1;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #1a4f8a;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.btn-success {
+  background: #2e7d32;
+  color: #fff;
+  width: 100%;
+  padding: 9px;
+  font-size: 13px;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #388e3c;
+}
+
+.btn-danger {
+  background: #b71c1c;
+  color: #fff;
+  font-size: 11px;
+  padding: 4px 12px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c62828;
+}
+
+/* ─── 登録済み雑誌リスト ────────────────────────────────────────────────────── */
+
+.empty-message {
+  color: #aaa;
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+  padding: 6px 0;
+}
+
+.journal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 2px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.journal-item:last-child {
+  border-bottom: none;
+}
+
+.journal-info {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.journal-title-link {
+  display: block;
+  color: #1a4f8a;
+  text-decoration: none;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journal-title-link:hover {
+  text-decoration: underline;
+}
+
+.journal-meta {
+  display: block;
+  color: #888;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  background: #fff0f0;
+  color: #b71c1c;
+  border: 1px solid #ffcdd2;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.delete-btn:hover {
+  background: #ffcdd2;
+}
+
+/* ─── 計算結果 ─────────────────────────────────────────────────────────────── */
+
+#result {
+  margin-top: 10px;
+}
+
+.result-header {
+  margin-bottom: 8px;
+}
+
+.result-condition {
+  font-size: 11px;
+  color: #777;
+  margin-bottom: 3px;
+}
+
+.condition-list {
+  list-style: none;
+  padding-left: 8px;
+  font-size: 11px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.condition-list li::before {
+  content: '・';
+}
+
+#result h3 {
+  font-size: 13px;
+  font-weight: bold;
+  color: #2e7d32;
+  margin-bottom: 6px;
+}
+
+.common-libraries-list {
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+  background: #f9fbe7;
+}
+
+.common-libraries-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-bottom: 1px solid #e8f5e9;
+  font-size: 12px;
+}
+
+.common-libraries-list li:last-child {
+  border-bottom: none;
+}
+
+.common-libraries-list a {
+  color: #1a4f8a;
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.common-libraries-list a:hover {
+  text-decoration: underline;
+}
+
+.lib-fa-id {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #888;
+  font-family: monospace;
+  min-width: 70px;
+}
+
+.copy-btn {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  font-size: 10px;
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+
+.copy-btn:hover {
+  background: #90caf9;
+}
+
+.copy-btn.copied {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+
+.no-result {
+  color: #b71c1c;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px;
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+}
+
+/* ─── クリアセクション ──────────────────────────────────────────────────────── */
+
+.clear-section {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px;
+}

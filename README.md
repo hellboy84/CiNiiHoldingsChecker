@@ -1,0 +1,87 @@
+# CiNii Holdings Checker
+
+> **A Chrome extension that searches the holdings of multiple journals on CiNii Books (https://ci.nii.ac.jp/books/) and extracts libraries that hold all specified volumes/issues. No data is ever sent to any external server.**
+
+CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し、指定した巻号を全て所蔵している図書館を抽出する Chrome 拡張機能です。外部サーバーへのデータ送信は一切行いません。
+
+## この拡張機能でできること
+
+- CiNii Books の雑誌詳細ページを開いた状態で、確認したい巻号を指定して所蔵館をコレクションに追加
+- 複数の雑誌について繰り返すことで、**全雑誌の指定巻号をすべて所蔵している共通所蔵館**を一覧表示
+- 巻単位・巻&号単位の両方で検索可能
+- 所蔵館の図書館コード（FA番号）のワンクリックコピー
+- データはブラウザのローカルストレージに保存（外部への送信なし）
+
+## 対応ブラウザ
+
+Chrome（Chromium 系ブラウザ全般）
+- Windows / macOS どちらでも動作します
+
+## インストール方法
+
+1. このリポジトリを ZIP でダウンロードして任意の場所に解凍する（または `git clone`）
+2. Chrome のアドレスバーに `chrome://extensions/` を入力して開く
+3. 右上の「**デベロッパーモード**」をオンにする
+4. 「**パッケージ化されていない拡張機能を読み込む**」をクリック
+5. 解凍したフォルダを選択する
+
+> **注意**：OneDrive などのクラウド同期フォルダに置いている場合、同期中にファイルがロックされて読み込みに失敗することがあります。ローカルフォルダに解凍してから読み込んでください。
+
+## 使い方
+
+1. CiNii Books で雑誌を検索し、雑誌の詳細ページを開く
+2. Chrome ツールバーの拡張機能アイコンをクリックしてポップアップを開く
+3. 「確認する巻号」に巻を入力（号も指定したい場合は号も入力）
+4. 「**コレクションに追加**」ボタンをクリック
+5. 別の雑誌の詳細ページを開いて手順 2〜4 を繰り返す
+6. 「**共通所蔵館を計算**」ボタンをクリックすると、全登録雑誌の指定巻号を所蔵している図書館が一覧表示される
+
+### 巻号指定の仕様
+
+| 入力例 | 動作 |
+|--------|------|
+| 巻：`12`、号：空白 | 12巻を1冊でも所蔵していればヒット |
+| 巻：`12`、号：`3` | 12巻3号を所蔵していればヒット |
+
+### 所蔵巻号の解釈
+
+CiNii Books 上の所蔵巻号表記を以下のように解釈します：
+
+| 表記例 | 意味 |
+|--------|------|
+| `1-5` | 1〜5巻を所蔵 |
+| `23+` | 23巻以降を所蔵（継続中） |
+| `12(1-3,5)` | 12巻の1〜3号と5号を所蔵 |
+| `12(3)+` | 12巻3号以降を所蔵 |
+
+## ファイル構成
+
+```
+CiNiiHoldings_extension/
+├── manifest.json   # 拡張機能の設定（Manifest V3）
+├── content.js      # CiNii Books ページから所蔵情報を抽出
+├── popup.html      # ポップアップ UI
+├── popup.js        # 巻号パース・所蔵判定・共通館計算ロジック
+└── popup.css       # ポップアップのスタイル
+```
+
+## プライバシー / Privacy
+
+本拡張機能は以下のデータをブラウザ内（`chrome.storage.local`）に保存します：
+
+- 雑誌タイトル・ URL
+- ユーザーが指定した巻号
+- 所蔵館名・図書館コード
+
+**外部サーバーへのデータ送信は一切行いません。**
+
+This extension stores the following data locally in the browser (`chrome.storage.local`):
+- Journal titles and URLs
+- Volume/issue numbers specified by the user
+- Library names and library codes
+
+**No data is ever sent to any external server.**
+
+## ライセンス
+
+MIT License — 詳細は [LICENSE](LICENSE) を参照してください。

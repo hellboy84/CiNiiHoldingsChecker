@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "CiNii 共通所蔵館チェッカー",
+  "version": "1.0",
+  "description": "CiNii Booksで複数の雑誌の共通所蔵館を抽出します / Finds libraries that commonly hold specified volumes across multiple journals on CiNii Books",
+  "permissions": ["storage", "activeTab"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "CiNii 共通所蔵館チェッカー"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://ci.nii.ac.jp/ncid/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}
