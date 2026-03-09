@@ -76,6 +76,10 @@ This extension stores the following data locally in the browser (`chrome.storage
 
 新潟大学の久田拓未様が講演で発表されていたアイデアを元にして作成させていただきました。
 
+## AI利用
+
+この機能の作成にはAIによるコーディング支援を受けています。
+
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
