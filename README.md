@@ -74,7 +74,7 @@ This extension stores the following data locally in the browser (`chrome.storage
 
 ## 謝辞
 
-新潟大学の久田拓未様が講演で発表されていたアイデアを元にして作成させていただきました。
+新潟大学の久田拓未様が講演で発表されていたアイデアを参考にして作成させていただきました。
 
 ## AI利用
 
