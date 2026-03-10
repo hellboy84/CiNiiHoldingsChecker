@@ -4,8 +4,19 @@
   "version": "1.0",
   "description": "CiNii Booksで複数の雑誌の共通所蔵館を抽出します / Finds libraries that commonly hold specified volumes across multiple journals on CiNii Books",
   "permissions": ["storage", "activeTab", "scripting"],
+  "browser_specific_settings": {
+   "gecko": {
+     "id": "cinii-holdings-checker@hellboy84",
+     "data_collection_permissions": {
+       "technical_data": false,
+       "interaction_data": false,
+       "required": ["none"]
+      }
+    }
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "CiNii 共通所蔵館チェッカー"
   }
 }
+
