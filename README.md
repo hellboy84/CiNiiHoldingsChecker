@@ -1,6 +1,6 @@
 # CiNii Holdings Checker (CiNii所蔵チェッカー)
 
-> **A Chrome extension that searches the holdings of multiple journals on CiNii Books (https://ci.nii.ac.jp/books/) and extracts libraries that hold all specified volumes/issues. No data is ever sent to any external server.**
+> **A Chrome / FireFox extension that searches the holdings of multiple journals on CiNii Books (https://ci.nii.ac.jp/books/) and extracts libraries that hold all specified volumes/issues. No data is ever sent to any external server.**
 
 CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し、指定した巻号を全て所蔵している図書館を抽出する Chrome / FireFox の拡張機能です。外部サーバーへのデータ送信は一切行いません。
 
@@ -72,6 +72,7 @@ CiNiiHoldings_extension/
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
