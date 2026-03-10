@@ -15,7 +15,7 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 
 ## 対応ブラウザ
 
-Chrome（Chromium 系ブラウザ全般）
+Chrome（Chromium 系ブラウザ全般）/ FireFox
 - Windows / macOS どちらでも動作します
 
 ## インストール方法
@@ -70,6 +70,7 @@ CiNiiHoldings_extension/
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
