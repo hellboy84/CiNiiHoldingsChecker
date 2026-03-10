@@ -18,7 +18,7 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 Chrome（Chromium 系ブラウザ全般）/ FireFox
 - Windows / macOS どちらでも動作します
 
-## インストール方法
+## インストール方法(Chrome)
 
 1. このリポジトリを ZIP でダウンロードして任意の場所に解凍する（または `git clone`）
 2. Chrome のアドレスバーに `chrome://extensions/` を入力して開く
@@ -70,6 +70,7 @@ CiNiiHoldings_extension/
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
