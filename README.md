@@ -20,7 +20,7 @@ Chrome（Chromium 系ブラウザ全般）/ FireFox
 
 ## インストール方法(Chrome：持続的)
 
-1. このリポジトリを ZIP でダウンロードして任意の場所に解凍する（または `git clone`）
+1. このリポジトリを ZIP でダウンロードして任意の場所に解凍する
 2. Chrome のアドレスバーに `chrome://extensions/` を入力して開く
 3. 右上の「**デベロッパーモード**」をオンにする
 4. 「**パッケージ化されていない拡張機能を読み込む**」をクリック
@@ -81,6 +81,7 @@ CiNiiHoldings_extension/
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
