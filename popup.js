@@ -220,7 +220,7 @@ addBtn.addEventListener('click', async () => {
 
   await chrome.storage.local.set({ journals });
   await renderJournalList();
-  resultEl.innerHTML = '';
+  resultEl.replaceChildren();
 
   const action = existingIdx >= 0 ? '更新' : '追加';
   showStatus(
@@ -235,25 +235,48 @@ async function renderJournalList() {
   const { journals = [] } = await chrome.storage.local.get('journals');
 
   if (journals.length === 0) {
-    journalListEl.innerHTML = '<p class="empty-message">登録済みの雑誌はありません</p>';
+    journalListEl.replaceChildren();
+    const emptyMsg = document.createElement('p');
+    emptyMsg.className = 'empty-message';
+    emptyMsg.textContent = '登録済みの雑誌はありません';
+    journalListEl.appendChild(emptyMsg);
     calcBtn.disabled = true;
     return;
   }
 
   calcBtn.disabled = false;
-  journalListEl.innerHTML = '';
+  journalListEl.replaceChildren();
 
   for (const journal of journals) {
     const item = document.createElement('div');
     item.className = 'journal-item';
-    item.innerHTML = `
-      <div class="journal-info">
-        <a href="${escapeHtml(journal.url)}" target="_blank" class="journal-title-link"
-           title="${escapeHtml(journal.title)}">${escapeHtml(journal.title)}</a>
-        <span class="journal-meta">${journal.targetVolume}巻${journal.targetIssue != null ? journal.targetIssue + '号' : ''} ／ ${journal.libraries.length}館所蔵</span>
-      </div>
-      <button class="delete-btn" data-id="${escapeHtml(journal.id)}" title="削除">×</button>
-    `;
+
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'journal-info';
+
+    const titleLink = document.createElement('a');
+    titleLink.href = journal.url;
+    titleLink.target = '_blank';
+    titleLink.className = 'journal-title-link';
+    titleLink.title = journal.title;
+    titleLink.textContent = journal.title;
+
+    const metaSpan = document.createElement('span');
+    metaSpan.className = 'journal-meta';
+    const issueText = journal.targetIssue != null ? `${journal.targetIssue}号` : '';
+    metaSpan.textContent = `${journal.targetVolume}巻${issueText} ／ ${journal.libraries.length}館所蔵`;
+
+    infoDiv.appendChild(titleLink);
+    infoDiv.appendChild(metaSpan);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.dataset.id = journal.id;
+    deleteBtn.title = '削除';
+    deleteBtn.textContent = '×';
+
+    item.appendChild(infoDiv);
+    item.appendChild(deleteBtn);
     journalListEl.appendChild(item);
   }
 
@@ -268,7 +291,7 @@ async function deleteJournal(id) {
   const { journals = [] } = await chrome.storage.local.get('journals');
   await chrome.storage.local.set({ journals: journals.filter((j) => j.id !== id) });
   await renderJournalList();
-  resultEl.innerHTML = '';
+  resultEl.replaceChildren();
 }
 
 // ─── 共通所蔵館の計算 ─────────────────────────────────────────────────────────
@@ -299,42 +322,71 @@ calcBtn.addEventListener('click', async () => {
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
   if (commonLibraries.length === 0) {
-    resultEl.innerHTML =
-      '<p class="no-result">全ての雑誌の対象巻号を所蔵している機関はありません</p>';
+    resultEl.replaceChildren();
+    const noResult = document.createElement('p');
+    noResult.className = 'no-result';
+    noResult.textContent = '全ての雑誌の対象巻号を所蔵している機関はありません';
+    resultEl.appendChild(noResult);
     return;
   }
 
-  const journalSummary = journals
-    .map((j) => {
-      const label = j.targetIssue != null
-        ? `${j.targetVolume}巻${j.targetIssue}号`
-        : `${j.targetVolume}巻`;
-      return `<li>${escapeHtml(j.title)}（${label}）</li>`;
-    })
-    .join('');
+  // result DOM構築
+  resultEl.replaceChildren();
 
-  const listHtml = commonLibraries
-    .map(
-      (lib) =>
-        `<li>
-          <button class="copy-btn" data-fa="${escapeHtml(lib.id)}" title="FA番号をコピー">copy</button>
-          <span class="lib-fa-id">${escapeHtml(lib.id)}</span>
-          <a href="https://ci.nii.ac.jp/library/${escapeHtml(lib.id)}" target="_blank">${escapeHtml(lib.name)}</a>
-        </li>`
-    )
-    .join('');
+  const resultHeader = document.createElement('div');
+  resultHeader.className = 'result-header';
 
-  resultEl.innerHTML = `
-    <div class="result-header">
-      <p class="result-condition">対象雑誌：</p>
-      <ul class="condition-list">${journalSummary}</ul>
-    </div>
-    <h3>共通所蔵館（${commonLibraries.length}件）</h3>
-    <ul class="common-libraries-list">${listHtml}</ul>
-  `;
+  const conditionP = document.createElement('p');
+  conditionP.className = 'result-condition';
+  conditionP.textContent = '対象雑誌：';
+  resultHeader.appendChild(conditionP);
+
+  const conditionList = document.createElement('ul');
+  conditionList.className = 'condition-list';
+  for (const j of journals) {
+    const label = j.targetIssue != null
+      ? `${j.targetVolume}巻${j.targetIssue}号`
+      : `${j.targetVolume}巻`;
+    const li = document.createElement('li');
+    li.textContent = `${j.title}（${label}）`;
+    conditionList.appendChild(li);
+  }
+  resultHeader.appendChild(conditionList);
+  resultEl.appendChild(resultHeader);
+
+  const heading = document.createElement('h3');
+  heading.textContent = `共通所蔵館（${commonLibraries.length}件）`;
+  resultEl.appendChild(heading);
+
+  const libList = document.createElement('ul');
+  libList.className = 'common-libraries-list';
+  for (const lib of commonLibraries) {
+    const li = document.createElement('li');
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.dataset.fa = lib.id;
+    copyBtn.title = 'FA番号をコピー';
+    copyBtn.textContent = 'copy';
+
+    const faSpan = document.createElement('span');
+    faSpan.className = 'lib-fa-id';
+    faSpan.textContent = lib.id;
+
+    const libLink = document.createElement('a');
+    libLink.href = `https://ci.nii.ac.jp/library/${lib.id}`;
+    libLink.target = '_blank';
+    libLink.textContent = lib.name;
+
+    li.appendChild(copyBtn);
+    li.appendChild(faSpan);
+    li.appendChild(libLink);
+    libList.appendChild(li);
+  }
+  resultEl.appendChild(libList);
 
   // copyボタン — イベント委譲
-  resultEl.querySelector('.common-libraries-list').addEventListener('click', async (e) => {
+  libList.addEventListener('click', async (e) => {
     const btn = e.target.closest('.copy-btn');
     if (!btn) return;
     const faId = btn.dataset.fa;
@@ -356,18 +408,6 @@ clearAllBtn.addEventListener('click', async () => {
   if (!confirm('登録済みの全データを削除しますか？')) return;
   await chrome.storage.local.remove('journals');
   await renderJournalList();
-  resultEl.innerHTML = '';
+  resultEl.replaceChildren();
   showStatus('全データをクリアしました', 'warning');
 });
-
-// ─── ユーティリティ ───────────────────────────────────────────────────────────
-
-/** XSS 対策のための HTML エスケープ */
-function escapeHtml(text) {
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
