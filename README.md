@@ -18,7 +18,7 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 Chrome（Chromium 系ブラウザ全般）/ FireFox
 - Windows / macOS どちらでも動作します
 
-## インストール方法(Chrome)
+## インストール方法(Chrome：持続的)
 
 1. このリポジトリを ZIP でダウンロードして任意の場所に解凍する（または `git clone`）
 2. Chrome のアドレスバーに `chrome://extensions/` を入力して開く
@@ -27,6 +27,15 @@ Chrome（Chromium 系ブラウザ全般）/ FireFox
 5. 解凍したフォルダを選択する
 6. メニュー「拡張機能>拡張機能を管理」から有効化する
 7. ツールバーにピン留めする
+
+## インストール方法(FireFox：一時的(ブラウザの再起動で消えます))
+
+1. このリポジトリを ZIP でダウンロードする(解凍不要)（または `git clone`）
+2. FireFox のアドレスバーに `about:debugging` を入力して開く
+3. 画面左側のメニューにある「**このFireFox**」をクリック
+4. 「一時的な拡張機能」という項目の下にある 「**一時的なアドオンを読み込む...**」 ボタンをクリック
+5. ZIPファイルを選択する
+6. ツールバーから使用する
 
 ## 使い方
 
@@ -72,6 +81,7 @@ CiNiiHoldings_extension/
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
+
 
 
 
