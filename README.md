@@ -55,7 +55,7 @@ Chrome（Chromium 系ブラウザ全般）/ FireFox
 ## ファイル構成
 
 ```
-CiNiiHoldings_extension/
+CiNiiHoldingsChecker/
 ├── manifest.json   # 拡張機能の設定（Manifest V3）
 ├── content.js      # CiNii Books ページから所蔵情報を抽出
 ├── popup.html      # ポップアップ UI
@@ -80,10 +80,6 @@ CiNiiHoldings_extension/
 ## ライセンス
 
 MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
-
-
-
-
 
 
 
