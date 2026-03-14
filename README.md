@@ -1,12 +1,12 @@
-# CiNii Holdings Checker (CiNii所蔵チェッカー)
+# CiNii Holdings Checker (CiNii共通所蔵館チェッカー)
 
 > **A Chrome / Firefox extension that searches the holdings of multiple journals on CiNii Books (https://ci.nii.ac.jp/books/) and extracts libraries that hold all specified volumes/issues. **
 
-CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し、指定した巻号を全て所蔵している図書館を抽出する Chrome / Firefox の拡張機能です。
+CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し、指定した巻号を全て所蔵している図書館を抽出する Chrome / Firefox の拡張機能です。公式ストアからインストールできます。→ **[Chrome](https://chromewebstore.google.com/detail/cinii-%E5%85%B1%E9%80%9A%E6%89%80%E8%94%B5%E9%A4%A8%E3%83%81%E3%82%A7%E3%83%83%E3%82%AB%E3%83%BC/mlbdikgehmaimgbmcmlnkhdmkaiogjai?authuser=0&hl=ja) / [Firefox](https://addons.mozilla.org/addon/cinii-%E5%85%B1%E9%80%9A%E6%89%80%E8%94%B5%E9%A4%A8%E3%83%81%E3%82%A7%E3%83%83%E3%82%AB%E3%83%BC/)**
 
 ## この拡張機能でできること
 
-- CiNii Books の雑誌の詳細ページ上で機能する
+- [CiNii Books](https://ci.nii.ac.jp/books/) の雑誌の詳細ページ上で機能する
 - **複数の雑誌の指定した巻号をすべて所蔵している所蔵館**を一覧で表示する
 - 所蔵館の図書館コード(FA番号)をワンクリックでコピーできる
 - データはブラウザのローカルストレージに一時的に保存されるだけで外部への送信などは一切行わない
@@ -40,7 +40,7 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 
 ## 使い方
 
-1. CiNii Books で雑誌を検索し、雑誌の詳細ページを開く
+1. [CiNii Books](https://ci.nii.ac.jp/books/) で雑誌を検索し、雑誌の詳細ページを開く
 2. Chrome / Firefox のツールバーの本拡張機能アイコンをクリックしてポップアップを開く
 3. 「確認する巻号」に巻号を入力（巻だけでも検索可能）
 4. 「**コレクションに追加**」ボタンをクリック
