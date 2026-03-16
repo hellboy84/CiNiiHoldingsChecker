@@ -1,6 +1,6 @@
-# CiNii Holdings Checker (CiNii共通所蔵館チェッカー)
+# CiNii Holdings Checker (CiNii所蔵チェッカー)
 
-> **A Chrome / Firefox extension that searches the holdings of multiple journals on CiNii Books (https://ci.nii.ac.jp/books/) and extracts libraries that hold all specified volumes/issues. **
+> A Chrome / FireFox extension that searches the holdings of multiple journals on CiNii Books (https://ci.nii.ac.jp/books/) and extracts libraries that hold all specified volumes/issues. 
 
 CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し、指定した巻号を全て所蔵している図書館を抽出する Chrome / Firefox の拡張機能です。公式ストアからインストールできます。→ **[Chrome](https://chromewebstore.google.com/detail/cinii-%E5%85%B1%E9%80%9A%E6%89%80%E8%94%B5%E9%A4%A8%E3%83%81%E3%82%A7%E3%83%83%E3%82%AB%E3%83%BC/mlbdikgehmaimgbmcmlnkhdmkaiogjai?authuser=0&hl=ja) / [Firefox](https://addons.mozilla.org/addon/cinii-%E5%85%B1%E9%80%9A%E6%89%80%E8%94%B5%E9%A4%A8%E3%83%81%E3%82%A7%E3%83%83%E3%82%AB%E3%83%BC/)**
 
@@ -21,7 +21,7 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 ## 公式ストア版のインストール方法
 - [Firefox版の公式の拡張機能ストアからインストールできるようになりました](https://addons.mozilla.org/addon/cinii-%E5%85%B1%E9%80%9A%E6%89%80%E8%94%B5%E9%A4%A8%E3%83%81%E3%82%A7%E3%83%83%E3%82%AB%E3%83%BC/) (2026/03/13)
 - [Chrome版の公式の拡張機能ストアからインストールできるようになりました](https://chromewebstore.google.com/detail/cinii-%E5%85%B1%E9%80%9A%E6%89%80%E8%94%B5%E9%A4%A8%E3%83%81%E3%82%A7%E3%83%83%E3%82%AB%E3%83%BC/mlbdikgehmaimgbmcmlnkhdmkaiogjai?authuser=0&hl=ja) (2026/03/14)
-
+ 
 ## GitHub版のインストール方法
 ### Chrome：持続的
 1. このリポジトリを ZIP でダウンロードして任意の場所に解凍する
@@ -31,21 +31,21 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 5. 解凍したフォルダを選択する
 6. メニュー「拡張機能>拡張機能を管理」から有効化する
 7. ツールバーにピン留めする
-### Firefox：一時的(ブラウザの再起動で消えます))
+### FireFox：一時的(ブラウザの再起動で消えます))
 1. このリポジトリを ZIP でダウンロードする(解凍不要)（または `git clone`）
-2. Firefox のアドレスバーに `about:debugging` を入力して開く
+2. FireFox のアドレスバーに `about:debugging` を入力して開く
 3. 画面左側のメニューにある「**このFireFox**」をクリック
 4. 「一時的な拡張機能」という項目の下にある 「**一時的なアドオンを読み込む...**」 ボタンをクリック
 5. ZIPファイルを選択する(ツールバーに登録される)
 
 ## 使い方
 
-1. [CiNii Books](https://ci.nii.ac.jp/books/) で雑誌を検索し、雑誌の詳細ページを開く
-2. Chrome / Firefox のツールバーの本拡張機能アイコンをクリックしてポップアップを開く
+1. CiNii Books で雑誌を検索し、雑誌の詳細ページを開く
+2. Chrome / FireFox のツールバーの本拡張機能アイコンをクリックしてポップアップを開く
 3. 「確認する巻号」に巻号を入力（巻だけでも検索可能）
 4. 「**コレクションに追加**」ボタンをクリック
 5. 別の雑誌の詳細ページを開いて手順 2〜4 を繰り返す
-6. 「**共通所蔵館を計算**」ボタンをクリックすると、全登録雑誌の指定巻号を所蔵している図書館が一覧表示される
+6. 「**共通所蔵館を計算**」ボタンをクリックすると、全登録雑誌の指定巻号を所蔵している図書館が一覧表示される(地域>館名順のソート)
 
 ### 巻号指定の仕様
 

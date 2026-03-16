@@ -29,8 +29,9 @@ function extractHoldingsData() {
       const libraryId = nameEl.getAttribute('href').replace('/library/', '');
       // <wbr> 要素はテキストコンテンツを持たないため textContent で除去される
       const volumeStr = volumeEl.textContent.trim();
+      const region = item.getAttribute('_kc') || '';
 
-      libraries.push({ name, libraryId, volumeStr });
+      libraries.push({ name, libraryId, volumeStr, region });
     }
   });
 

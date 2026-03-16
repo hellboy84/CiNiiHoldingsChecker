@@ -177,6 +177,7 @@ addBtn.addEventListener('click', async () => {
       libraryMap.set(lib.libraryId, {
         name: lib.name,
         libraryId: lib.libraryId,
+        region: lib.region || '',
         volumeStrs: [],
       });
     }
@@ -187,7 +188,7 @@ addBtn.addEventListener('click', async () => {
   const qualifiedLibraries = [];
   for (const libInfo of libraryMap.values()) {
     if (libInfo.volumeStrs.some((vs) => isHeld(vs, targetVolume, targetIssue))) {
-      qualifiedLibraries.push({ name: libInfo.name, libraryId: libInfo.libraryId });
+      qualifiedLibraries.push({ name: libInfo.name, libraryId: libInfo.libraryId, region: libInfo.region });
     }
   }
 
@@ -309,17 +310,28 @@ calcBtn.addEventListener('click', async () => {
     }
   }
 
-  // 館名を引く（最初に見つかったエントリを使用）
+  // 館名・地域コードを引く（最初に見つかったエントリを使用）
   const nameMap = new Map();
+  const regionMap = new Map();
   for (const journal of journals) {
     for (const lib of journal.libraries) {
       if (!nameMap.has(lib.libraryId)) nameMap.set(lib.libraryId, lib.name);
+      if (!regionMap.has(lib.libraryId)) regionMap.set(lib.libraryId, lib.region || '');
     }
   }
 
   const commonLibraries = [...commonIds]
-    .map((id) => ({ id, name: nameMap.get(id) || id }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    .map((id) => ({ id, name: nameMap.get(id) || id, region: regionMap.get(id) || '' }))
+    .sort((a, b) => {
+      const ra = parseInt(a.region, 10);
+      const rb = parseInt(b.region, 10);
+      const aIsNum = !isNaN(ra);
+      const bIsNum = !isNaN(rb);
+      if (aIsNum && bIsNum && ra !== rb) return ra - rb;
+      if (aIsNum && !bIsNum) return -1;
+      if (!aIsNum && bIsNum) return 1;
+      return a.name.localeCompare(b.name, 'ja');
+    });
 
   if (commonLibraries.length === 0) {
     resultEl.replaceChildren();
