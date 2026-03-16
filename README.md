@@ -9,7 +9,6 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 - [CiNii Books](https://ci.nii.ac.jp/books/) の雑誌の詳細ページ上で機能する
 - **複数の雑誌の指定した巻号をすべて所蔵している所蔵館**を一覧で表示する
 - 所蔵館の図書館コード(FA番号)をワンクリックでコピーできる
-- データはブラウザのローカルストレージに一時的に保存されるだけで外部への送信などは一切行わない
 
 <img width="600" alt="スクリーンショット 2026-03-09 141333" src="https://github.com/user-attachments/assets/4f0de2ab-05f4-4f72-a97b-13a1e10c20a8" />
 
@@ -23,6 +22,8 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 - [Chrome版の公式の拡張機能ストアからインストールできるようになりました](https://chromewebstore.google.com/detail/cinii-%E5%85%B1%E9%80%9A%E6%89%80%E8%94%B5%E9%A4%A8%E3%83%81%E3%82%A7%E3%83%83%E3%82%AB%E3%83%BC/mlbdikgehmaimgbmcmlnkhdmkaiogjai?authuser=0&hl=ja) (2026/03/14)
  
 ## GitHub版のインストール方法
+ストア版と基本的に同一のものですが、ストアの審査通過などのタイミングの関係で、GitHub版の方がストア版より先行して機能実装されている場合があります。
+
 ### Chrome：持続的
 1. このリポジトリを ZIP でダウンロードして任意の場所に解凍する
 2. Chrome のアドレスバーに `chrome://extensions/` を入力して開く
@@ -67,7 +68,9 @@ CiNiiHoldingsChecker/
 
 ## プライバシー / Privacy
 
-詳細は [プライバシーポリシー / Privacy Policy](PRIVACY_POLICY.md) をご覧ください。
+- データはブラウザのローカルストレージに一時的に保存されるだけで外部への送信などは一切行いません。
+- 本拡張機能は、個人を特定できる情報を収集・使用・共有しません。
+- そのほか詳細は [プライバシーポリシー / Privacy Policy](PRIVACY_POLICY.md) を御覧ください。
 
 ## 謝辞
 
