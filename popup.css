@@ -250,6 +250,18 @@ h2 {
   margin-top: 2px;
 }
 
+.exclude-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0 6px;
+  cursor: pointer;
+}
+
+.journal-item.excluded .journal-info {
+  opacity: 0.4;
+}
+
 .delete-btn {
   flex-shrink: 0;
   padding: 3px 8px;

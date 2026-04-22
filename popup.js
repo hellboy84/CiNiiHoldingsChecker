@@ -113,6 +113,9 @@ const clearAllBtn = document.getElementById('clear-all-btn');
 /** @type {{ journalTitle: string, journalUrl: string, libraries: Array }|null} */
 let currentPageData = null;
 
+/** セッション内で計算から一時除外する journal.id の集合（ポップアップを閉じるとリセット） */
+const excludedIds = new Set();
+
 // ─── 初期化 ──────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -232,6 +235,11 @@ addBtn.addEventListener('click', async () => {
 
 // ─── 登録済み雑誌リスト描画 ───────────────────────────────────────────────────
 
+function updateCalcBtnState(journals) {
+  const activeCount = journals.length - excludedIds.size;
+  calcBtn.disabled = (activeCount === 0);
+}
+
 async function renderJournalList() {
   const { journals = [] } = await chrome.storage.local.get('journals');
 
@@ -241,16 +249,16 @@ async function renderJournalList() {
     emptyMsg.className = 'empty-message';
     emptyMsg.textContent = '登録済みの雑誌はありません';
     journalListEl.appendChild(emptyMsg);
-    calcBtn.disabled = true;
+    updateCalcBtnState(journals);
     return;
   }
 
-  calcBtn.disabled = false;
   journalListEl.replaceChildren();
 
   for (const journal of journals) {
     const item = document.createElement('div');
     item.className = 'journal-item';
+    if (excludedIds.has(journal.id)) item.classList.add('excluded');
 
     const infoDiv = document.createElement('div');
     infoDiv.className = 'journal-info';
@@ -270,6 +278,22 @@ async function renderJournalList() {
     infoDiv.appendChild(titleLink);
     infoDiv.appendChild(metaSpan);
 
+    const excludeCheck = document.createElement('input');
+    excludeCheck.type = 'checkbox';
+    excludeCheck.className = 'exclude-check';
+    excludeCheck.checked = !excludedIds.has(journal.id);
+    excludeCheck.title = '計算対象に含める';
+    excludeCheck.addEventListener('change', async () => {
+      if (excludeCheck.checked) {
+        excludedIds.delete(journal.id);
+      } else {
+        excludedIds.add(journal.id);
+      }
+      item.classList.toggle('excluded', !excludeCheck.checked);
+      updateCalcBtnState(journals);
+      await runCalculation(journals);
+    });
+
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
     deleteBtn.dataset.id = journal.id;
@@ -277,9 +301,12 @@ async function renderJournalList() {
     deleteBtn.textContent = '×';
 
     item.appendChild(infoDiv);
+    item.appendChild(excludeCheck);
     item.appendChild(deleteBtn);
     journalListEl.appendChild(item);
   }
+
+  updateCalcBtnState(journals);
 
   journalListEl.querySelectorAll('.delete-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -289,6 +316,7 @@ async function renderJournalList() {
 }
 
 async function deleteJournal(id) {
+  excludedIds.delete(id);
   const { journals = [] } = await chrome.storage.local.get('journals');
   await chrome.storage.local.set({ journals: journals.filter((j) => j.id !== id) });
   await renderJournalList();
@@ -297,12 +325,15 @@ async function deleteJournal(id) {
 
 // ─── 共通所蔵館の計算 ─────────────────────────────────────────────────────────
 
-calcBtn.addEventListener('click', async () => {
-  const { journals = [] } = await chrome.storage.local.get('journals');
-  if (journals.length === 0) return;
+async function runCalculation(journals) {
+  const activeJournals = journals.filter((j) => !excludedIds.has(j.id));
+  if (activeJournals.length === 0) {
+    resultEl.replaceChildren();
+    return;
+  }
 
   // 各雑誌の所蔵館IDの集合を作り、積集合を求める
-  const librarySets = journals.map((j) => new Set(j.libraries.map((l) => l.libraryId)));
+  const librarySets = activeJournals.map((j) => new Set(j.libraries.map((l) => l.libraryId)));
   let commonIds = new Set(librarySets[0]);
   for (let i = 1; i < librarySets.length; i++) {
     for (const id of commonIds) {
@@ -313,7 +344,7 @@ calcBtn.addEventListener('click', async () => {
   // 館名・地域コードを引く（最初に見つかったエントリを使用）
   const nameMap = new Map();
   const regionMap = new Map();
-  for (const journal of journals) {
+  for (const journal of activeJournals) {
     for (const lib of journal.libraries) {
       if (!nameMap.has(lib.libraryId)) nameMap.set(lib.libraryId, lib.name);
       if (!regionMap.has(lib.libraryId)) regionMap.set(lib.libraryId, lib.region || '');
@@ -355,7 +386,7 @@ calcBtn.addEventListener('click', async () => {
 
   const conditionList = document.createElement('ul');
   conditionList.className = 'condition-list';
-  for (const j of journals) {
+  for (const j of activeJournals) {
     const label = j.targetIssue != null
       ? `${j.targetVolume}巻${j.targetIssue}号`
       : `${j.targetVolume}巻`;
@@ -412,6 +443,12 @@ calcBtn.addEventListener('click', async () => {
       alert('クリップボードへのコピーに失敗しました');
     }
   });
+}
+
+calcBtn.addEventListener('click', async () => {
+  const { journals = [] } = await chrome.storage.local.get('journals');
+  if (journals.length === 0) return;
+  await runCalculation(journals);
 });
 
 // ─── 全データクリア ───────────────────────────────────────────────────────────
@@ -419,6 +456,7 @@ calcBtn.addEventListener('click', async () => {
 clearAllBtn.addEventListener('click', async () => {
   if (!confirm('登録済みの全データを削除しますか？')) return;
   await chrome.storage.local.remove('journals');
+  excludedIds.clear();
   await renderJournalList();
   resultEl.replaceChildren();
   showStatus('全データをクリアしました', 'warning');
