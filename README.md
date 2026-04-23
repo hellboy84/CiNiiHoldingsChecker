@@ -12,8 +12,8 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 
 #### バージョンアップの修正箇所
 
-- 館一覧のソート順を「地域>館名」に変更した(v1.2)
-- 登録した雑誌の組み合わせを変更できるチェックボックスを用意した(v1.3)
+- 館一覧のソート順を「地域>館名」に変更した( [v1.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v1.2) )
+- 登録した雑誌の組み合わせを変更できるチェックボックスを用意した( [v1.3](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v1.3) )
 
 <img width="600" alt="スクリーンショット 2026-03-09 141333" src="https://github.com/user-attachments/assets/4f0de2ab-05f4-4f72-a97b-13a1e10c20a8" />
 
@@ -40,7 +40,7 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 5. 解凍したフォルダを選択する
 6. メニュー「拡張機能>拡張機能を管理」から有効化する
 7. ツールバーにピン留めする
-### FireFox：一時的(ブラウザの再起動で消えます))
+### FireFox：一時的(ブラウザの再起動で消えます)
 1. このリポジトリを ZIP でダウンロードする(解凍不要)（または `git clone`）
 2. FireFox のアドレスバーに `about:debugging` を入力して開く
 3. 画面左側のメニューにある「**このFireFox**」をクリック
@@ -55,6 +55,9 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 4. 「**コレクションに追加**」ボタンをクリック
 5. 別の雑誌の詳細ページを開いて手順 2〜4 を繰り返す
 6. 「**共通所蔵館を計算**」ボタンをクリックすると、全登録雑誌の指定巻号を所蔵している図書館が一覧表示される(地域>館名順のソート)
+7. 「登録済み雑誌」の各誌のチェックボックスのチェックを外すと検索対象から一時的に除外できる (xは削除)
+
+<img width="423" alt="スクリーンショット 2026-04-23" src="https://github.com/user-attachments/assets/d858b6b9-9d52-439f-8095-51c3d217bb53" />
 
 ### 巻号指定の仕様
 
