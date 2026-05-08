@@ -1,4 +1,4 @@
-# CiNii Holdings Checker (CiNii所蔵チェッカー)
+# CiNii Holdings Checker (CiNii 共通所蔵館チェッカー)
 
 > A Chrome / FireFox extension that searches the holdings of multiple journals on CiNii Books (https://ci.nii.ac.jp/books/) and extracts libraries that hold all specified volumes/issues. 
 
@@ -12,6 +12,7 @@ CiNii Books(https://ci.nii.ac.jp/books/) で複数の雑誌の所蔵を検索し
 
 #### バージョンアップの修正箇所
 
+- 使用権限をHost Permissionsから，activeTabとscriptingに変更した( [v1.1](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v1.1) )
 - 館一覧のソート順を「地域>館名」に変更した( [v1.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v1.2) )
 - 登録した雑誌の組み合わせを変更できるチェックボックスを用意した( [v1.3](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v1.3) )
 
