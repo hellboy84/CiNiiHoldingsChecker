@@ -91,7 +91,25 @@ h2 {
   border: 1px solid #ef9a9a;
 }
 
-/* ─── 雑誌タイトル ──────────────────────────────────────────────────────────── */
+.status-link {
+  color: inherit;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+/* ─── ページ種別 ───────────────────────────────────────────────────────────── */
+
+.page-type {
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.page-type:empty {
+  display: none;
+}
+
+/* ─── 資料タイトル ──────────────────────────────────────────────────────────── */
 
 .journal-title {
   font-weight: bold;
@@ -118,7 +136,7 @@ h2 {
   color: #555;
 }
 
-.volume-input-row input[type='number'] {
+.volume-input-row input {
   width: 64px;
   padding: 5px 6px;
   border: 1px solid #bbb;
@@ -129,12 +147,18 @@ h2 {
   -moz-appearance: textfield;
 }
 
+/* 図書の巻次は文字列が長く、datalist の候補幅も入力欄幅に追従するため広く取る */
+.volume-input-row input.wide {
+  width: 180px;
+  text-align: left;
+}
+
 .volume-input-row input[type='number']::-webkit-inner-spin-button,
 .volume-input-row input[type='number']::-webkit-outer-spin-button {
   opacity: 1;
 }
 
-.volume-input-row input[type='number']:focus {
+.volume-input-row input:focus {
   outline: none;
   border-color: #1a4f8a;
   box-shadow: 0 0 0 2px rgba(26, 79, 138, 0.15);
@@ -143,6 +167,16 @@ h2 {
 .volume-input-row span {
   font-size: 12px;
   color: #555;
+}
+
+#issue-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#issue-group[hidden] {
+  display: none;
 }
 
 .volume-hint {
