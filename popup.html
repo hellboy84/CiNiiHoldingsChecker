@@ -8,13 +8,21 @@
 </head>
 <body>
   <div class="container">
-    <h1>CiNii 共通所蔵館チェッカー</h1>
+    <h1>
+      <a
+        href="https://github.com/hellboy84/CiNiiHoldingsChecker"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="GitHub リポジトリを開く"
+      >CiNii 共通所蔵館チェッカー</a>
+    </h1>
 
     <!-- 現在のページ情報 -->
     <section class="section">
-      <h2>現在のページ</h2>
-      <p id="page-type" class="page-type"></p>
+      <h2 id="page-type">現在のページ</h2>
       <div id="status" class="status"></div>
+
+      <div id="input-area">
       <p id="journal-title" class="journal-title"></p>
 
       <div class="volume-input-row">
@@ -24,7 +32,7 @@
           id="target-volume"
           min="1"
           step="1"
-          placeholder="巻"
+          placeholder=""
           list="volume-options"
           autocomplete="off"
         />
@@ -36,7 +44,7 @@
             id="target-issue"
             min="1"
             step="1"
-            placeholder="号（任意）"
+            placeholder="任意"
           />
           <span>号</span>
         </span>
@@ -46,10 +54,11 @@
       <button id="add-btn" class="btn btn-primary" disabled>
         コレクションに追加
       </button>
+      </div>
     </section>
 
     <!-- 登録済み資料リスト -->
-    <section class="section">
+    <section class="section" id="section-list">
       <h2>登録済み資料</h2>
       <div id="journal-list">
         <p class="empty-message">登録済みの資料はありません</p>
@@ -57,7 +66,7 @@
     </section>
 
     <!-- 共通所蔵館の計算・結果 -->
-    <section class="section">
+    <section class="section" id="section-calc">
       <button id="calc-btn" class="btn btn-success" disabled>
         共通所蔵館を計算
       </button>
@@ -65,8 +74,8 @@
     </section>
 
     <!-- 全データクリア -->
-    <section class="section clear-section">
-      <button id="clear-all-btn" class="btn btn-danger">全データをクリア</button>
+    <section class="section clear-section" id="section-clear">
+      <button id="clear-all-btn" class="btn btn-danger">登録済み資料を全て削除</button>
     </section>
   </div>
 

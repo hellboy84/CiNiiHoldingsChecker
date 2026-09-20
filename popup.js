@@ -4,7 +4,8 @@
 
 // ─── ページ種別 ──────────────────────────────────────────────────────────────
 
-const DEFAULT_PAGE_TYPE = 'books-journal';
+/** ver1.4 までのデータ（CiNii Books の雑誌）の移行先 */
+const LEGACY_PAGE_TYPE = 'books-journal';
 
 const PAGE_TYPE_LABELS = {
   'books-journal': 'CiNii Books - 雑誌',
@@ -127,23 +128,51 @@ function normalizeVol(s) {
 }
 
 /**
- * 図書の巻次を部分一致で照合する
+ * 入力された巻次をカンマ区切りで分割する（全角カンマ・読点も区切りとして扱う）
+ * 例: "上, 上巻、下巻" → ["上", "上巻", "下巻"]
+ * @param {string} target
+ * @returns {string[]}
+ */
+function splitVolumeTargets(target) {
+  return (target || '').split(/[,，、]/).map((s) => s.trim()).filter((s) => s);
+}
+
+/**
+ * 図書の巻次を部分一致で照合する（複数指定した場合は OR 条件）
  * 同一書誌でも館によって "上" / "上巻" / "VOL.下" のように表記が揺れるため部分一致とする
  * @param {string[]} volumeStrs 館が持つ巻次の一覧
- * @param {string} target       入力された巻次（空文字なら巻次不問）
+ * @param {string} target       入力された巻次（空文字なら巻次不問／カンマ区切りで複数可）
  * @returns {boolean}
  */
 function matchesBookVolume(volumeStrs, target) {
-  if (!target) return true;                  // 未入力 → その書誌の全巻次を所蔵とみなす
+  const targets = splitVolumeTargets(target);
+  if (targets.length === 0) return true;     // 未入力 → その書誌の全巻次を所蔵とみなす
   if (volumeStrs.length === 0) return false; // 巻次情報を持たない館は除外
-  const t = normalizeVol(target);
-  return volumeStrs.some((v) => normalizeVol(v).includes(t));
+  const normalized = volumeStrs.map(normalizeVol);
+  return targets.some((t) => {
+    const n = normalizeVol(t);
+    return normalized.some((v) => v.includes(n));
+  });
+}
+
+/** 同一条件の判定に使うキー（順番や区切り記号の違いを吸収する） */
+function volumeTargetKey(target) {
+  return splitVolumeTargets(target).map(normalizeVol).sort().join(',');
+}
+
+/** 登録時に確定する表示用の巻次ラベル */
+function volumeTargetLabel(target) {
+  const targets = splitVolumeTargets(target);
+  return targets.length === 0 ? '巻次指定なし' : targets.join('・');
 }
 
 // ─── DOM 要素 ────────────────────────────────────────────────────────────────
 
 const statusDiv = document.getElementById('status');
 const pageTypeEl = document.getElementById('page-type');
+/** 対象ページでのみ表示する領域（入力欄・登録リスト・計算・クリア） */
+const workAreaEls = ['input-area', 'section-list', 'section-calc', 'section-clear']
+  .map((id) => document.getElementById(id));
 const journalTitleEl = document.getElementById('journal-title');
 const volumeLabelEl = document.getElementById('volume-label');
 const volumeUnitEl = document.getElementById('volume-unit');
@@ -158,13 +187,24 @@ const calcBtn = document.getElementById('calc-btn');
 const resultEl = document.getElementById('result');
 const clearAllBtn = document.getElementById('clear-all-btn');
 
+/** 対象ページでのみ使う領域の表示・非表示を切り替える */
+function setWorkAreaVisible(visible) {
+  for (const el of workAreaEls) el.hidden = !visible;
+}
+
 // ─── 状態 ────────────────────────────────────────────────────────────────────
 
 /** @type {{ pageType: string, title: string, url: string, libraries: Array }|null} */
 let currentPageData = null;
 
-/** 表示中のページ種別（CiNii 以外のページでは前回の種別を表示する） */
-let currentPageType = DEFAULT_PAGE_TYPE;
+/** 現在開いているページの種別（対象外のページでは null） */
+let currentPageType = null;
+
+/** そのページに実在する巻次（図書の入力候補） */
+let volumeCandidates = [];
+
+/** 候補リストを組み立てたときの先頭部分（作り直しの要否判定用） */
+let volumeOptionsRenderedBase = null;
 
 /** セッション内で計算から一時除外するエントリ id の集合（ポップアップを閉じるとリセット） */
 const excludedIds = new Set();
@@ -181,7 +221,7 @@ async function migrateStorage() {
 
   const migrated = {};
   if (Array.isArray(journals) && journals.length > 0) {
-    migrated[DEFAULT_PAGE_TYPE] = journals;
+    migrated[LEGACY_PAGE_TYPE] = journals;
   }
   await chrome.storage.local.set({ collections: migrated });
   if (journals !== undefined) await chrome.storage.local.remove('journals');
@@ -210,7 +250,7 @@ async function setEntries(entries) {
 document.addEventListener('DOMContentLoaded', async () => {
   await migrateStorage();
   await loadCurrentPage();
-  await renderJournalList();
+  if (currentPageType) await renderJournalList();
 });
 
 // ─── 現在ページからデータ取得 ─────────────────────────────────────────────────
@@ -228,24 +268,21 @@ async function loadCurrentPage() {
     const data = await chrome.tabs.sendMessage(tab.id, { action: 'getHoldingsData' });
 
     if (!data) {
-      await applyFallbackPageType();
-      showStatus('CiNii Books / CiNii Research の詳細ページを開いてください', 'warning');
+      applyNoPageType('CiNii Books / CiNii Research の詳細ページを開いてください');
       return;
     }
 
     if (!data.pageType) {
-      await applyFallbackPageType();
-      showStatus('このページ種別には対応していません（雑誌・図書の詳細ページを開いてください）', 'warning');
+      applyNoPageType('このページ種別には対応していません（雑誌・図書の詳細ページを開いてください）');
       return;
     }
 
     currentPageType = data.pageType;
-    await chrome.storage.local.set({ lastPageType: currentPageType });
-    applyPageTypeUi(currentPageType, true);
+    applyPageTypeUi(currentPageType);
 
     if (data.noHoldings) {
       showStatus(
-        'このページには所蔵情報がありません。「所蔵」タブを開いてください',
+        'このページには所蔵情報がありません。「所蔵館」タブを開いてください',
         'warning',
         data.holdingsUrl
       );
@@ -258,26 +295,29 @@ async function loadCurrentPage() {
     showStatus(`${data.libraries.length}館の所蔵情報を検出しました`, 'success');
     addBtn.disabled = false;
   } catch (_e) {
-    await applyFallbackPageType();
-    showStatus('CiNii Books / CiNii Research の詳細ページを開いてください', 'warning');
+    applyNoPageType('CiNii Books / CiNii Research の詳細ページを開いてください');
   }
 }
 
-/** CiNii のページでないときは、前回扱っていた種別のコレクションを表示する */
-async function applyFallbackPageType() {
-  const { lastPageType } = await chrome.storage.local.get('lastPageType');
-  currentPageType = PAGE_TYPE_LABELS[lastPageType] ? lastPageType : DEFAULT_PAGE_TYPE;
-  applyPageTypeUi(currentPageType, false);
+/**
+ * 対象外のページでは、案内だけを残して入力欄・登録リスト・計算・クリアを隠す
+ * @param {string} message
+ */
+function applyNoPageType(message) {
+  currentPageType = null;
+  pageTypeEl.textContent = '現在のページ：対象外のページ';
+  setWorkAreaVisible(false);
+  showStatus(message, 'warning');
 }
 
 /**
  * ページ種別に応じて入力欄とラベルを切り替える
  * @param {string} pageType
- * @param {boolean} isCurrent 現在開いているページの種別かどうか
  */
-function applyPageTypeUi(pageType, isCurrent) {
+function applyPageTypeUi(pageType) {
   const label = PAGE_TYPE_LABELS[pageType] || '';
-  pageTypeEl.textContent = isCurrent ? `現在のページ：${label}` : `表示中：${label}`;
+  pageTypeEl.textContent = `現在のページ：${label}`;
+  setWorkAreaVisible(true);
 
   const book = isBookType(pageType);
 
@@ -288,18 +328,22 @@ function applyPageTypeUi(pageType, isCurrent) {
   targetVolumeInput.value = '';
   targetIssueInput.value = '';
   targetVolumeInput.type = book ? 'text' : 'number';
-  targetVolumeInput.placeholder = book ? '巻次（任意）' : '巻';
+  targetVolumeInput.placeholder = book ? '任意。カンマ区切りでOR。' : '';
   targetVolumeInput.classList.toggle('wide', book);
 
   volumeHintEl.textContent = book
-    ? '※巻次は任意。空欄なら全巻次を所蔵とみなす。部分一致で照合（例：上、2025年版）'
+    ? '※部分一致で照合。候補から続けて選ぶかカンマ区切りで OR 条件で追加される（例：上,上巻）'
     : '※号を空白にすると巻単位で照合';
 
+  volumeCandidates = [];
+  volumeOptionsRenderedBase = null;
   volumeOptionsEl.replaceChildren();
 }
 
 /** 図書の場合、そのページに実在する巻次を入力候補として提示する */
 function fillVolumeOptions(data) {
+  volumeCandidates = [];
+  volumeOptionsRenderedBase = null;
   volumeOptionsEl.replaceChildren();
   if (!isBookType(data.pageType)) return;
 
@@ -308,13 +352,57 @@ function fillVolumeOptions(data) {
     for (const v of libVolumeStrs(lib)) values.add(v);
   }
 
-  const sorted = [...values].sort((a, b) => a.localeCompare(b, 'ja'));
-  for (const v of sorted) {
+  volumeCandidates = [...values].sort((a, b) => a.localeCompare(b, 'ja'));
+  renderVolumeOptions();
+}
+
+/**
+ * 候補に付ける先頭部分を決める
+ * - 入力が空／区切り文字の直後 → そのまま（新しい巻次を選ぶ）
+ * - 直前の入力がそのまま候補と一致 → 末尾に区切りを足す（選ぶたびに OR で追加される）
+ * - 入力途中 → 最後の区切りまで（打ちかけの部分は候補で置き換える）
+ * @returns {string}
+ */
+function volumeOptionBase() {
+  const value = targetVolumeInput.value;
+  const sepIdx = Math.max(value.lastIndexOf(','), value.lastIndexOf('，'), value.lastIndexOf('、'));
+  const head = sepIdx >= 0 ? value.slice(0, sepIdx + 1) : '';
+  const tail = value.slice(sepIdx + 1).trim();
+
+  if (!tail) return head;
+  if (volumeCandidates.includes(tail)) return `${value},`;
+  return head;
+}
+
+/**
+ * 入力欄の内容に応じて候補を組み立てる
+ * プルダウンから選ぶだけで巻次を積み重ねられるよう、候補には確定済みの入力を先頭に付ける
+ */
+function renderVolumeOptions() {
+  if (volumeCandidates.length === 0) return;
+
+  const base = volumeOptionBase();
+  // 先頭部分が変わったときだけ作り直す（入力のたびに候補リストが揺れるのを防ぐ）
+  if (base === volumeOptionsRenderedBase) return;
+  volumeOptionsRenderedBase = base;
+
+  // すでに選んだ巻次は候補から外す
+  const chosen = new Set(splitVolumeTargets(base).map(normalizeVol));
+
+  volumeOptionsEl.replaceChildren();
+  for (const v of volumeCandidates) {
+    if (chosen.has(normalizeVol(v))) continue;
     const option = document.createElement('option');
-    option.value = v;
+    option.value = base + v;
+    // 先頭を付けた分だけ表示が長くなるため、一覧には巻次だけを見せる
+    if (base) option.setAttribute('label', v);
     volumeOptionsEl.appendChild(option);
   }
 }
+
+targetVolumeInput.addEventListener('input', () => {
+  if (isBookType(currentPageType)) renderVolumeOptions();
+});
 
 /**
  * ステータス表示
@@ -367,7 +455,7 @@ addBtn.addEventListener('click', async () => {
 
   if (book) {
     targetVolumeLabel = targetVolumeInput.value.trim();
-    label = targetVolumeLabel || '巻次指定なし';
+    label = volumeTargetLabel(targetVolumeLabel);
   } else {
     targetVolume = parseInt(targetVolumeInput.value, 10);
     if (isNaN(targetVolume) || targetVolume < 1) {
@@ -413,7 +501,7 @@ addBtn.addEventListener('click', async () => {
   const existingIdx = entries.findIndex((e) => {
     if (e.url !== currentPageData.url) return false;
     return book
-      ? normalizeVol(e.targetVolumeLabel || '') === normalizeVol(targetVolumeLabel)
+      ? volumeTargetKey(e.targetVolumeLabel || '') === volumeTargetKey(targetVolumeLabel)
       : e.targetVolume === targetVolume && e.targetIssue === targetIssue;
   });
 
@@ -437,6 +525,12 @@ addBtn.addEventListener('click', async () => {
   await setEntries(entries);
   await renderJournalList();
   resultEl.replaceChildren();
+
+  if (book) {
+    // 次の巻次を選び直せるよう、選択済みの巻次を空にして候補も戻す
+    targetVolumeInput.value = '';
+    renderVolumeOptions();
+  }
 
   const action = existingIdx >= 0 ? '更新' : '追加';
   showStatus(
@@ -662,7 +756,7 @@ calcBtn.addEventListener('click', async () => {
 
 clearAllBtn.addEventListener('click', async () => {
   const label = PAGE_TYPE_LABELS[currentPageType] || '';
-  if (!confirm(`「${label}」の登録済みデータを全て削除しますか？`)) return;
+  if (!confirm(`「${label}」の登録済み資料を全て削除しますか？`)) return;
 
   const collections = await getCollections();
   delete collections[currentPageType];
@@ -671,5 +765,5 @@ clearAllBtn.addEventListener('click', async () => {
   excludedIds.clear();
   await renderJournalList();
   resultEl.replaceChildren();
-  showStatus(`「${label}」の登録データをクリアしました`, 'warning');
+  showStatus(`「${label}」の登録済み資料を全て削除しました`, 'warning');
 });

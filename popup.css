@@ -42,11 +42,20 @@ h1 {
   border-bottom: 2px solid #1a4f8a;
 }
 
+h1 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1 a:hover,
+h1 a:focus-visible {
+  text-decoration: underline;
+}
+
 h2 {
   font-size: 11px;
   font-weight: bold;
   color: #777;
-  text-transform: uppercase;
   letter-spacing: 0.8px;
   margin-bottom: 8px;
   padding-bottom: 4px;
@@ -61,6 +70,12 @@ h2 {
   padding: 12px;
   border: 1px solid #dde3ea;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* 対象外のページでは入力欄・リスト・計算・クリアをまとめて隠す */
+.section[hidden],
+#input-area[hidden] {
+  display: none;
 }
 
 /* ─── ステータス表示 ────────────────────────────────────────────────────────── */
@@ -95,18 +110,6 @@ h2 {
   color: inherit;
   font-weight: bold;
   white-space: nowrap;
-}
-
-/* ─── ページ種別 ───────────────────────────────────────────────────────────── */
-
-.page-type {
-  font-size: 11px;
-  color: #555;
-  margin-bottom: 6px;
-}
-
-.page-type:empty {
-  display: none;
 }
 
 /* ─── 資料タイトル ──────────────────────────────────────────────────────────── */
@@ -149,7 +152,7 @@ h2 {
 
 /* 図書の巻次は文字列が長く、datalist の候補幅も入力欄幅に追従するため広く取る */
 .volume-input-row input.wide {
-  width: 180px;
+  width: 200px;
   text-align: left;
 }
 
