@@ -21,11 +21,11 @@ CiNii Books(https://ci.nii.ac.jp/books/) と CiNii Research(https://cir.nii.ac.j
 - 使用権限をHost Permissionsから，activeTabとscriptingに変更した( [v1.1](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v1.1) )
 - 館一覧のソート順を「地域>館名」に変更した( [v1.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v1.2) )
 - 登録した雑誌の組み合わせを変更できるチェックボックスを用意した( [v1.3](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v1.3) )
-- CiNii Books の図書，CiNii Research の雑誌・図書に対応した（v2.0）
-- 所蔵巻号の区切り文字 `;` を解釈できていなかった不具合を修正した（v2.0）
+- CiNii Books の図書，CiNii Research の雑誌・図書に対応した（[v2.0](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.0)）
+- 所蔵巻号の区切り文字 `;` を解釈できていなかった不具合を修正した（[v2.0](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.0)）
   - 例：`26-161,163,165-221;222(1-5,8-11,13)`のような表記
-- 館名クリックで館情報をポップアップ内に表示するようにした（v2.1）
-  - CiNii Books の `https://ci.nii.ac.jp/library/…` へのリンクを廃止し，サービス終了後も館情報を参照できるようにした
+- 館名クリックで館情報をポップアップ内に表示するようにした（[v2.1](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.1)）
+  - CiNii Books の `https://ci.nii.ac.jp/library/…` へのリンクを廃止し，CiNii Booksのサービス終了後も館情報を参照できるように
 
 <img width="600" alt="スクリーンショット 2026-03-09 141333" src="https://github.com/user-attachments/assets/4f0de2ab-05f4-4f72-a97b-13a1e10c20a8" />
 
@@ -34,7 +34,6 @@ CiNii Books(https://ci.nii.ac.jp/books/) と CiNii Research(https://cir.nii.ac.j
 ## 対応ブラウザ
 
 - Chrome / Firefox
-  - Windows / macOS どちらでも動作します
 
 ## 公式ストア版のインストール方法
 - [Firefox版の公式の拡張機能ストアからインストールできるようになりました](https://addons.mozilla.org/addon/cinii-%E5%85%B1%E9%80%9A%E6%89%80%E8%94%B5%E9%A4%A8%E3%83%81%E3%82%A7%E3%83%83%E3%82%AB%E3%83%BC/) (2026/03/13)
@@ -85,14 +84,14 @@ CiNii Books(https://ci.nii.ac.jp/books/) と CiNii Research(https://cir.nii.ac.j
 | 空白 | その書誌のなんらかの巻次を所蔵している館がヒット = 所蔵館すべてがヒット |
 | `上` | 「上」を含む巻次の所蔵館がヒット（`上` / `上巻` など） |
 | `72` | 「72」を含む巻次の所蔵館がヒット（`1972 / 1972年版` / `1972年版(Vol.14)` など） |
-| `上,上巻,下巻` | カンマ区切りで複数指定すると、**いずれか**を所蔵している館がヒット（OR 条件） |
+| `上,下` | カンマ区切りで複数指定すると，いずれかを含む巻次を所蔵している館がヒット（OR 条件） |
 
 - 図書の巻次検索は，任意の文字列の手入力，もしくは，候補からの選択で可能
   - 巻次候補は紐づいている巻次を全部リアリタイムで切り出して表示している，ので，基本的に全パターンが網羅されているはず（最近追加された巻次はなんらかの更新が必要，とかってことがない）
 - 図書の巻次検索の基本動作は**部分一致**
-  - CiNii の巻次表記は同じ書誌でも所蔵館で表記揺れがあるので
+  - 所蔵館で巻次に表記揺れがあるのでそれに対応できるように
   - 過去から続くVol積み系書誌はたまに巻次の九龍城砦みたいになっている
-- カンマ（`,` `，` `、`）で区切ると複数の巻次を OR 条件で指定できる
+- カンマ（`,` `，` `、`）で区切ると複数の巻次を，部分一致かつ OR 条件で指定できる
 - 巻次を入力した場合，**巻次の情報を持たない館は対象外**になる（単巻本などで巻次が登録されていない書誌は，巻次を空白にして使って）
 - 候補は連続して入力するとOR 条件として追加される
 
@@ -106,13 +105,6 @@ CiNiiHoldingsChecker/
 ├── popup.js        # 巻号・巻次パース・所蔵判定・共通館計算ロジック
 └── popup.css       # ポップアップのスタイル
 ```
-
-## 既知の制限
-
-- 館情報は、表示中のタブと同じサイトから取得しています（CiNii Books なら `/library/FA…`、CiNii Research なら `/api/facility/FA…`）。同じ館でも開いているタブによって取得先が変わりますが、これは追加の権限（host_permissions）を要求せずに済ませるためで、表示される内容は同じ登録情報です
-- CiNii 以外のタブを開いた状態で「共通所蔵館を計算」した場合、取得する足場が無いため館情報は展開されません。その場合は代わりに CiNii Research の館情報を別タブで開くリンクを表示します
-- CiNii Research 側の取得先は htmx のポップアップ用エンドポイントで、公開APIではありません。CiNii 側の仕様変更で取得できなくなる可能性があります（その場合も共通所蔵館の抽出と FA番号のコピーは影響を受けません）
-- 館情報に記載される ILL の料金・送付方法は各館が NACSIS-CAT/ILL に登録した内容をそのまま表示したものです。最新の条件は相手館にご確認ください
 
 ## プライバシー / Privacy
 
