@@ -139,14 +139,152 @@ function extractHoldingsData() {
   };
 }
 
+// ─── 館情報（参加組織情報）の取得 ─────────────────────────────────────────
+//
+// ILL の複写料金・送料・決済方法は、CiNii の「館情報」に載っている。
+// Books は /library/FA… が独立したページだが、CiNii Research では htmx の
+// ポップアップ（/api/facility/FA…）だけで、開けるURLが存在しない。
+// そこで同一オリジンの content script から fetch して、ポップアップ側で描画する。
+// 同一オリジンなので host_permissions は不要（activeTab のみで動く）。
+
+/**
+ * 現在のサイトにおける館情報のパスを返す
+ * @param {string} libraryId FA番号
+ * @returns {string|null}
+ */
+function facilityPath(libraryId) {
+  const host = location.hostname;
+  if (host === 'cir.nii.ac.jp') return `/api/facility/${libraryId}`;
+  if (host === 'ci.nii.ac.jp') return `/library/${libraryId}`;
+  return null;
+}
+
+/**
+ * 要素のテキストを正規化して取り出す
+ * メールアドレスの @ は Books が <script>+<noscript>、Research が
+ * .replace-at-mark で難読化しているため、どちらも @ に戻す
+ * @param {Element|null} el
+ * @returns {string}
+ */
+function facilityText(el) {
+  if (!el) return '';
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('script').forEach((s) => s.remove());
+  clone.querySelectorAll('noscript, .replace-at-mark, #replace-at-mark')
+    .forEach((n) => n.replaceWith('@'));
+  return clone.textContent.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * 館名・住所・電話番号を取り出す
+ * Books:    <p class="library-location">305-8550 つくば市春日1-2</p>
+ *           <span class="library-tel">TEL：029-859-1200</span>
+ * Research: <span class="library-zip-code">…</span><span class="library-address">…</span>
+ *           <span class="library-tel">052-778-7147</span>
+ * @param {Document} doc
+ * @returns {{ name: string, zip: string, address: string, tel: string, fax: string }}
+ */
+function extractFacilityHeader(doc) {
+  const addrEl = doc.querySelector('.library-address');
+  // Books は郵便番号と住所が同じ <p> に入っているので分離せずそのまま使う
+  const zip = addrEl ? facilityText(doc.querySelector('.library-zip-code')) : '';
+  const address = addrEl ? facilityText(addrEl)
+                         : facilityText(doc.querySelector('p.library-location'));
+  // Books はラベルが span の中、Research は外にあるので、あれば剥がす
+  const strip = (s, label) => s.replace(new RegExp(`^${label}\\s*[：:]?\\s*`, 'i'), '');
+
+  return {
+    name: facilityText(doc.querySelector('h1.library_class')),
+    zip,
+    address,
+    tel: strip(facilityText(doc.querySelector('.library-tel')), 'TEL'),
+    fax: strip(facilityText(doc.querySelector('.library-fax')), 'FAX'),
+  };
+}
+
+/**
+ * 「利用方法」の各行を取り出す
+ * 本文中の URL はアンカーのテキストが省略されている場合があるので href も返す
+ * @param {Document} doc
+ * @returns {Array<{ text: string, links: string[] }>}
+ */
+function extractFacilityParagraphs(doc) {
+  const root = doc.querySelector('.library-particulars');
+  if (!root) return [];
+
+  return [...root.querySelectorAll('p.lib-paragraph')]
+    .map((p) => ({
+      text: facilityText(p),
+      // DOMParser の文書には base URL が無いため、絶対URLだけを拾う
+      links: [...p.querySelectorAll('a[href]')]
+        .map((a) => a.getAttribute('href'))
+        .filter((href) => /^https?:\/\//i.test(href)),
+    }))
+    .filter((p) => p.text || p.links.length);
+}
+
+/**
+ * 「各種コード」（ILL参加・図書館間複写サービスの可否など）を取り出す
+ * @param {Document} doc
+ * @returns {Array<{ label: string, value: string }>}
+ */
+function extractFacilityCodes(doc) {
+  return [...doc.querySelectorAll('.detailcodeslist .papercodesitem')]
+    .map((li) => ({
+      label: facilityText(li.querySelector('dt')),
+      value: facilityText(li.querySelector('dd')),
+    }))
+    .filter((c) => c.label);
+}
+
+/**
+ * 館情報を取得してパースする
+ * @param {string} libraryId FA番号
+ * @returns {Promise<{ ok: true, facility: object }|{ ok: false, reason: string }>}
+ */
+async function fetchFacility(libraryId) {
+  if (!/^[A-Za-z0-9]{1,16}$/.test(libraryId || '')) return { ok: false, reason: 'invalid-id' };
+
+  const path = facilityPath(libraryId);
+  if (!path) return { ok: false, reason: 'unsupported-page' };
+
+  let res;
+  try {
+    res = await fetch(location.origin + path, {
+      credentials: 'omit',
+      // Research 側は htmx からのリクエストを前提にしているため合わせておく
+      headers: { 'HX-Request': 'true' },
+    });
+  } catch (_) {
+    return { ok: false, reason: 'fetch-failed' };
+  }
+  if (!res.ok) return { ok: false, reason: `http-${res.status}` };
+
+  const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+  const facility = {
+    libraryId,
+    ...extractFacilityHeader(doc),
+    paragraphs: extractFacilityParagraphs(doc),
+    codes: extractFacilityCodes(doc),
+  };
+
+  // CiNii 側の仕様変更で構造が変わった場合は、誤った空表示ではなくエラーにする
+  if (!facility.name && facility.paragraphs.length === 0 && facility.codes.length === 0) {
+    return { ok: false, reason: 'parse-failed' };
+  }
+  return { ok: true, facility };
+}
+
 // ポップアップからのメッセージを受信して所蔵データを返す
 // executeScript で複数回注入されても onMessage リスナーが重複しないようガードする
 // （ガード名にバージョンを含めることで、旧版が注入済みのタブでも新版が必ず登録される）
-if (!window.__ciniiCheckerInjected_v2) {
-  window.__ciniiCheckerInjected_v2 = true;
+if (!window.__ciniiCheckerInjected_v3) {
+  window.__ciniiCheckerInjected_v3 = true;
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.action === 'getHoldingsData') {
       sendResponse(extractHoldingsData());
+    } else if (request.action === 'getFacilityInfo') {
+      fetchFacility(request.libraryId).then(sendResponse);
     }
     return true; // 非同期レスポンスを許可
   });

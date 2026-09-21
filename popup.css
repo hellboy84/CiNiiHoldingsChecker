@@ -360,31 +360,132 @@ h2 {
   background: #f9fbe7;
 }
 
-.common-libraries-list li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* 館情報パネル内のリストに継承させないため、直下の li だけを対象にする */
+.common-libraries-list > li {
   padding: 5px 8px;
   border-bottom: 1px solid #e8f5e9;
   font-size: 12px;
 }
 
-.common-libraries-list li:last-child {
+.common-libraries-list > li:last-child {
   border-bottom: none;
 }
 
-.common-libraries-list a {
-  color: #1a4f8a;
-  text-decoration: none;
+.lib-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lib-name-btn {
   flex: 1;
   min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: #1a4f8a;
+  text-align: left;
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.common-libraries-list a:hover {
+.lib-name-btn:hover {
   text-decoration: underline;
+}
+
+.lib-name-btn::before {
+  content: '▸ ';
+  color: #66bb6a;
+}
+
+.lib-name-btn[aria-expanded="true"]::before {
+  content: '▾ ';
+}
+
+/* ─── 館情報パネル ───────────────────────────── */
+
+.lib-detail {
+  margin: 4px 0 2px 18px;
+  padding: 6px 8px;
+  border-left: 3px solid #a5d6a7;
+  background: #fff;
+  border-radius: 0 4px 4px 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.lib-detail[hidden] {
+  display: none;
+}
+
+.lib-detail-contact {
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.lib-detail-heading {
+  margin: 6px 0 2px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #2e7d32;
+  border-bottom: 1px dotted #c8e6c9;
+}
+
+.lib-detail-line {
+  margin: 1px 0;
+  word-break: break-word;
+}
+
+.lib-detail a {
+  color: #1a4f8a;
+  word-break: break-all;
+}
+
+.lib-detail-note {
+  color: #888;
+}
+
+.lib-detail-error {
+  color: #b71c1c;
+}
+
+.lib-detail-fallback {
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.lib-code-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 0 0 4px;
+  padding: 0;
+}
+
+.lib-code-list li {
+  padding: 1px 5px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: #fafafa;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.lib-code-list li.ok {
+  border-color: #a5d6a7;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.lib-code-list li.ng {
+  border-color: #ffcdd2;
+  background: #ffebee;
+  color: #b71c1c;
 }
 
 .lib-fa-id {

@@ -707,6 +707,9 @@ async function runCalculation(entries) {
   for (const lib of commonLibraries) {
     const li = document.createElement('li');
 
+    const row = document.createElement('div');
+    row.className = 'lib-row';
+
     const copyBtn = document.createElement('button');
     copyBtn.className = 'copy-btn';
     copyBtn.dataset.fa = lib.id;
@@ -717,20 +720,31 @@ async function runCalculation(entries) {
     faSpan.className = 'lib-fa-id';
     faSpan.textContent = lib.id;
 
-    const libLink = document.createElement('a');
-    libLink.href = `https://ci.nii.ac.jp/library/${lib.id}`;
-    libLink.target = '_blank';
-    libLink.textContent = lib.name;
+    const nameBtn = document.createElement('button');
+    nameBtn.className = 'lib-name-btn';
+    nameBtn.dataset.fa = lib.id;
+    nameBtn.setAttribute('aria-expanded', 'false');
+    nameBtn.title = '館情報（ILL の受付可否・料金・送付方法）を開く';
+    nameBtn.textContent = lib.name;
 
-    li.appendChild(copyBtn);
-    li.appendChild(faSpan);
-    li.appendChild(libLink);
+    const detail = document.createElement('div');
+    detail.className = 'lib-detail';
+    detail.hidden = true;
+
+    row.append(copyBtn, faSpan, nameBtn);
+    li.append(row, detail);
     libList.appendChild(li);
   }
   resultEl.appendChild(libList);
 
-  // copyボタン — イベント委譲
+  // copyボタン・館名ボタン — イベント委譲
   libList.addEventListener('click', async (e) => {
+    const nameBtn = e.target.closest('.lib-name-btn');
+    if (nameBtn) {
+      await toggleFacility(nameBtn);
+      return;
+    }
+
     const btn = e.target.closest('.copy-btn');
     if (!btn) return;
     const faId = btn.dataset.fa;
@@ -744,6 +758,163 @@ async function runCalculation(entries) {
       alert('クリップボードへのコピーに失敗しました');
     }
   });
+}
+
+// ─── 館情報（参加組織情報）の表示 ─────────────────────────────────────────
+//
+// CiNii Research には館単体のページが無く、館情報は htmx のポップアップでしか
+// 出てこない。content script に同一オリジンで取得させ、ここで描画する。
+
+/** libraryId -> 取得済みの館情報（成功したものだけキャッシュする） */
+const facilityCache = new Map();
+
+const FACILITY_ERRORS = {
+  'unsupported-page': 'CiNii Books / CiNii Research のページを開いた状態で実行すると館情報を表示できます',
+  'no-content-script': 'CiNii Books / CiNii Research のページを開いた状態で実行すると館情報を表示できます',
+  'parse-failed': 'CiNii 側のページ構成が変わったため、館情報を読み取れませんでした',
+  'fetch-failed': '館情報の取得に失敗しました（通信エラー）',
+  'invalid-id': 'FA番号が不正です',
+};
+
+/**
+ * 館情報を取得する（成功時のみキャッシュし、失敗は再試行できるようにする）
+ * @param {string} libraryId
+ * @returns {Promise<{ ok: boolean, facility?: object, reason?: string }>}
+ */
+async function requestFacility(libraryId) {
+  if (facilityCache.has(libraryId)) return facilityCache.get(libraryId);
+
+  let result;
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    result = await chrome.tabs.sendMessage(tab.id, { action: 'getFacilityInfo', libraryId });
+    if (!result) result = { ok: false, reason: 'no-content-script' };
+  } catch (_) {
+    // CiNii 以外のタブでは content script が注入されていない
+    result = { ok: false, reason: 'no-content-script' };
+  }
+
+  if (result.ok) facilityCache.set(libraryId, result);
+  return result;
+}
+
+/**
+ * 館名ボタンの開閉
+ * @param {HTMLButtonElement} btn
+ */
+async function toggleFacility(btn) {
+  const detail = btn.closest('li').querySelector('.lib-detail');
+
+  if (!detail.hidden) {
+    detail.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    return;
+  }
+
+  detail.hidden = false;
+  btn.setAttribute('aria-expanded', 'true');
+  if (detail.dataset.loaded === 'true') return;
+
+  const loading = document.createElement('p');
+  loading.className = 'lib-detail-note';
+  loading.textContent = '館情報を取得中…';
+  detail.replaceChildren(loading);
+
+  const result = await requestFacility(btn.dataset.fa);
+  renderFacility(detail, btn.dataset.fa, result);
+  if (result.ok) detail.dataset.loaded = 'true';
+}
+
+/**
+ * 館情報を描画する
+ * @param {HTMLElement} detail
+ * @param {string} libraryId
+ * @param {{ ok: boolean, facility?: object, reason?: string }} result
+ */
+function renderFacility(detail, libraryId, result) {
+  detail.replaceChildren();
+
+  if (!result.ok) {
+    const msg = document.createElement('p');
+    msg.className = 'lib-detail-error';
+    msg.textContent = FACILITY_ERRORS[result.reason]
+      || `館情報を取得できませんでした（${result.reason}）`;
+    detail.appendChild(msg);
+
+    // 取得できない主な理由は CiNii 以外のタブでポップアップを開いた場合で、
+    // URL自体は生きている。CiNii Books の /library/ は2027年3月に消えるため、
+    // 終了後も残る CiNii Research 側を案内する（素のHTML断片が開く）
+    const fallback = document.createElement('a');
+    fallback.className = 'lib-detail-fallback';
+    fallback.href = `https://cir.nii.ac.jp/api/facility/${libraryId}`;
+    fallback.target = '_blank';
+    fallback.textContent = 'CiNii Research の館情報を別タブで開く';
+    detail.appendChild(fallback);
+    return;
+  }
+
+  const f = result.facility;
+
+  const contact = [
+    [f.zip, f.address].filter(Boolean).join(' '),
+    f.tel && `TEL ${f.tel}`,
+    f.fax && `FAX ${f.fax}`,
+  ].filter(Boolean).join(' / ');
+  if (contact) {
+    const p = document.createElement('p');
+    p.className = 'lib-detail-contact';
+    p.textContent = contact;
+    detail.appendChild(p);
+  }
+
+  if (f.codes.length) {
+    const codeList = document.createElement('ul');
+    codeList.className = 'lib-code-list';
+    for (const code of f.codes) {
+      // FA番号は一覧側に出ているので省く
+      if (code.label === '図書館ID') continue;
+      const li = document.createElement('li');
+      li.className = code.value === '可' || code.value === '参加' ? 'ok'
+                   : code.value === '不可' || code.value === '不参加' ? 'ng'
+                   : '';
+      li.textContent = `${code.label}：${code.value}`;
+      codeList.appendChild(li);
+    }
+    if (codeList.childElementCount) detail.appendChild(codeList);
+  }
+
+  for (const para of f.paragraphs) {
+    // 「===== 複写 =====」のような区切り行は見出しとして扱う
+    const headingMatch = para.text.match(/^=+\s*(.+?)\s*=+$/);
+    if (headingMatch) {
+      const h = document.createElement('h5');
+      h.className = 'lib-detail-heading';
+      h.textContent = headingMatch[1];
+      detail.appendChild(h);
+      continue;
+    }
+
+    const p = document.createElement('p');
+    p.className = 'lib-detail-line';
+    if (para.text) p.textContent = para.text;
+    for (const href of para.links) {
+      // 本文中に URL がそのまま出ている場合はリンクを重複させない
+      if (para.text.includes(href)) continue;
+      const a = document.createElement('a');
+      a.href = href;
+      a.target = '_blank';
+      a.textContent = href;
+      p.append(' ', a);
+    }
+    if (p.textContent.trim()) detail.appendChild(p);
+  }
+
+  if (!detail.childElementCount) {
+    const note = document.createElement('p');
+    note.className = 'lib-detail-note';
+    note.textContent = 'この館の館情報は登録されていません';
+    detail.appendChild(note);
+  }
 }
 
 calcBtn.addEventListener('click', async () => {
