@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CiNii 共通所蔵館チェッカー",
   "version": "2.1",
-  "description": "CiNii Books / CiNii Research で複数の雑誌・図書の共通所蔵館を抽出します / Finds libraries that commonly hold specified volumes across multiple journals or books on CiNii Books and CiNii Research",
+  "description": "CiNii Books / CiNii Research で複数の雑誌・図書の共通所蔵館を抽出します",
   "permissions": ["storage", "activeTab", "scripting"],
   "browser_specific_settings": {
    "gecko": {
