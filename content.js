@@ -129,6 +129,8 @@ function extractHoldingsData() {
       volumeStrs: extractVolumeStrs(item, isBook),
       // 所蔵年次（雑誌のみ。例 "1948-2011"）
       years: item.querySelector('.hlyr')?.textContent.trim() || '',
+      // 配置コード（例 "本館" "足立"）。同じ館IDでも配置場所ごとに行が分かれる
+      location: item.querySelector('.ll-location')?.textContent.trim() || '',
       region: item.getAttribute('_kc') || '',
       // 料金相殺制度への参加（"A" = 参加 / "N" = 不参加）
       grp: item.getAttribute('_type_grp') || '',

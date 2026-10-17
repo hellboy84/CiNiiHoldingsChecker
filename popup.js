@@ -641,7 +641,10 @@ async function runCalculation(entries) {
   resultEl.replaceChildren();
 
   const heading = document.createElement('h3');
-  heading.textContent = `共通所蔵館（${commonLibraries.length}件）`;
+  const collapseBtn = document.createElement('button');
+  collapseBtn.className = 'collapse-all-btn';
+  collapseBtn.textContent = '▴ 詳細を閉じる';
+  heading.append(`共通所蔵館（${commonLibraries.length}件）`, collapseBtn);
   resultEl.appendChild(heading);
 
   const regionCounts = new Map();
@@ -706,6 +709,12 @@ async function runCalculation(entries) {
     libList.appendChild(li);
   }
   resultEl.appendChild(libList);
+
+  // 開いた館情報をまとめて閉じる
+  collapseBtn.addEventListener('click', () => {
+    for (const detail of libList.querySelectorAll('.lib-detail')) detail.hidden = true;
+    for (const btn of libList.querySelectorAll('.lib-name-btn')) btn.setAttribute('aria-expanded', 'false');
+  });
 
   // copyボタン・館名ボタン — イベント委譲
   libList.addEventListener('click', async (e) => {
@@ -834,7 +843,7 @@ function renderLibraryHoldings(libraryId) {
     for (const record of holding ? holding.records : []) {
       const vols = book ? matchedBookVolumes(record.volumeStrs, entry.targetVolumeLabel) : record.volumeStrs;
       if (vols.length === 0 && !record.years) continue;
-      lines.push([record.years && `[${record.years}]`, vols.join(book ? '、' : ', ')].filter(Boolean).join(' '));
+      lines.push([record.location, record.years && `[${record.years}]`, vols.join(book ? '、' : ', ')].filter(Boolean).join(' '));
     }
     for (const text of lines) {
       const line = document.createElement('p');
@@ -959,6 +968,11 @@ function renderFacility(box, libraryId, result) {
 
   // ── 各種コード（どの館も同じ項目なので、位置を固定した表にする）
   const codeBlock = detailBlock('館情報');
+  // 一覧では長い館名が … で省略されるため、ここで館名全体を出す
+  const fullName = document.createElement('p');
+  fullName.className = 'facility-name';
+  fullName.textContent = lastCalc.libraries.get(libraryId)?.name || f.name;
+  codeBlock.appendChild(fullName);
   const codeMap = new Map(f.codes.map((c) => [c.label, c.value]));
   const grp = lastCalc.libraries.get(libraryId)?.grp;
   codeMap.set('料金相殺', grp === 'A' ? '可' : grp === 'N' ? '不可' : '');

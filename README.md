@@ -39,6 +39,10 @@ CiNii Books(https://ci.nii.ac.jp/books/) と CiNii Research(https://cir.nii.ac.j
   - ※ v2.1 以前に登録した資料は巻号の修正・館ごとの所蔵表示に対応していません。「登録済み資料を全て削除」して登録し直してください
 - 館情報を表で表示し，料金相殺を追加した。本文中の URL をクリックできるようにした（[v2.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.2)）
 - 計算結果の「対象資料」の表示を廃止した（登録済み資料と同じ内容のため）（[v2.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.2)）
+- 館詳細の所蔵に配置場所（「本館」「足立」など）を表示するようにした。同じ館で配置場所ごとに所蔵が分かれている場合に見分けられるように（[v2.3](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.3)）
+  - ※ v2.2 以前に登録した資料には配置場所が表示されません。表示するには登録し直してください
+- 館情報の先頭に館名を省略せずに表示するようにした（一覧では長い館名が「…」で省略されるため）（[v2.3](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.3)）
+- 開いた館詳細をまとめて閉じる「▴ 詳細を閉じる」ボタンを追加し，共通所蔵館の一覧を縦に少し広げた（[v2.3](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.3)）
 
 <img width="600" alt="スクリーンショット 2026-03-09 141333" src="https://github.com/user-attachments/assets/4f0de2ab-05f4-4f72-a97b-13a1e10c20a8" />
 
