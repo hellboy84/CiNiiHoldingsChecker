@@ -30,16 +30,15 @@ CiNii Books(https://ci.nii.ac.jp/books/) と CiNii Research(https://cir.nii.ac.j
   - 例：`26-161,163,165-221;222(1-5,8-11,13)`のような表記
 - 館名クリックで館情報をポップアップ内に表示するようにした（[v2.1](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.1)）
   - CiNii Books の `https://ci.nii.ac.jp/library/…` へのリンクを廃止し，CiNii Booksのサービス終了後も館情報を参照できるように
-- v2.2
-  - 巻号の判定を修正した
-    - `1-12(1-11,13)` の括弧が 1〜12巻すべてに掛かっていた → 最後の巻（12巻）だけに掛かるように
-    - `43(1)-44(2)` のような巻をまたぐ表記の括弧が無視されていた
-    - 末尾の `+` の扱いが巻と号で違っていた → どちらも「記載の最後の巻号より後も所蔵」に統一
-  - 入力中のヒット館数の表示，登録済み資料の巻号修正，地域見出しと都道府県の表示を追加した
-  - 館詳細に，その館の所蔵（年次・所蔵巻号）を表示するようにした
-  - 館情報を表で表示し，料金相殺を追加した。本文中の URL をクリックできるようにした
-  - 計算結果の「対象資料」の表示を廃止した（登録済み資料と同じ内容のため）
+- 巻号の判定を修正した（[v2.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.2)）
+  - `1-12(1-11,13)` の括弧が 1〜12巻すべてに掛かっていた → 最後の巻（12巻）だけに掛かるように
+  - `43(1)-44(2)` のような巻をまたぐ表記の括弧が無視されていた
+  - 末尾の `+` の扱いが巻と号で違っていた → どちらも「記載の最後の巻号より後も所蔵」に統一
+- 入力中のヒット館数の表示，登録済み資料の巻号修正，地域見出しと都道府県の表示を追加した（[v2.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.2)）
+- 館詳細に，その館の所蔵（年次・所蔵巻号）を表示するようにした（[v2.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.2)）
   - ※ v2.1 以前に登録した資料は巻号の修正・館ごとの所蔵表示に対応していません。「登録済み資料を全て削除」して登録し直してください
+- 館情報を表で表示し，料金相殺を追加した。本文中の URL をクリックできるようにした（[v2.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.2)）
+- 計算結果の「対象資料」の表示を廃止した（登録済み資料と同じ内容のため）（[v2.2](https://github.com/hellboy84/CiNiiHoldingsChecker/releases/tag/v2.2)）
 
 <img width="600" alt="スクリーンショット 2026-03-09 141333" src="https://github.com/user-attachments/assets/4f0de2ab-05f4-4f72-a97b-13a1e10c20a8" />
 
