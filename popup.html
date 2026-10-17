@@ -50,6 +50,7 @@
         </span>
       </div>
       <p id="volume-hint" class="volume-hint">※号を空白にすると巻単位で照合</p>
+      <p id="hit-preview" class="hit-preview" aria-live="polite"></p>
 
       <button id="add-btn" class="btn btn-primary" disabled>
         コレクションに追加
@@ -60,6 +61,9 @@
     <!-- 登録済み資料リスト -->
     <section class="section" id="section-list">
       <h2>登録済み資料</h2>
+      <p id="legacy-notice" class="legacy-notice" hidden>
+        ⚠ 以前のバージョンで登録した資料が残っています。新機能（巻号の修正・館ごとの所蔵表示）を使うには、「登録済み資料を全て削除」してから登録し直してください。
+      </p>
       <div id="journal-list">
         <p class="empty-message">登録済みの資料はありません</p>
       </div>
@@ -79,6 +83,7 @@
     </section>
   </div>
 
+  <script src="lib/holdings.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

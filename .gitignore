@@ -2,3 +2,4 @@ dev/
 web-ext-artifacts/
 ciniibooks_sample.html
 web-ext-config.cjs
+.DS_Store

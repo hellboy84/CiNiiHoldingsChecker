@@ -19,152 +19,7 @@ function isBookType(pageType) {
   return typeof pageType === 'string' && pageType.endsWith('-book');
 }
 
-// ─── 巻号パース ─────────────────────────────────────────────────────────────
-
-/**
- * カンマ・セミコロン区切りで分割するが，括弧（丸括弧）内の区切り文字は無視する
- * 例: "1-5,12(1-3,5)+,23+" → ["1-5", "12(1-3,5)+", "23+"]
- * 例: "165-221;222(1-5)"   → ["165-221", "222(1-5)"]
- * ※ CiNii の所蔵巻号は所蔵の区切りに ";" を使うことがある（Books / Research 双方で実在）
- * @param {string} str
- * @returns {string[]}
- */
-function splitTokens(str) {
-  const tokens = [];
-  let depth = 0, cur = '';
-  for (const ch of str.replace(/\s/g, '')) {
-    if (ch === '(') depth++;
-    else if (ch === ')') depth--;
-    if ((ch === ',' || ch === ';') && depth === 0) {
-      if (cur) tokens.push(cur);
-      cur = '';
-    } else {
-      cur += ch;
-    }
-  }
-  if (cur) tokens.push(cur);
-  return tokens;
-}
-
-/**
- * 数値範囲文字列（"1-3,5,7-10,12+" など）を範囲配列にパースする
- * @param {string} str
- * @returns {{ start: number, end: number }[]}
- */
-function parseRanges(str) {
-  const ranges = [];
-  // 括弧の内側に ";" が来た場合の保険として ";" も区切りとして扱う
-  for (const part of str.split(/[,;]/)) {
-    if (!part) continue;
-    const openEnded = part.endsWith('+');
-    const base = openEnded ? part.slice(0, -1) : part;
-    const dash = base.indexOf('-');
-    if (dash > 0) {
-      const s = parseInt(base.slice(0, dash), 10);
-      const e = parseInt(base.slice(dash + 1), 10);
-      if (!isNaN(s) && !isNaN(e)) ranges.push({ start: s, end: openEnded ? Infinity : e });
-    } else {
-      const n = parseInt(base, 10);
-      if (!isNaN(n)) ranges.push({ start: n, end: openEnded ? Infinity : n });
-    }
-  }
-  return ranges;
-}
-
-/** 値が範囲配列に含まれるか */
-function inRanges(ranges, n) {
-  return ranges.some((r) => n >= r.start && n <= r.end);
-}
-
-/**
- * 1トークンをパースする
- * - 括弧なし例: "1-5", "12+", "12"  → { volRanges, issueRanges: null }
- * - 括弧あり例: "12(1-3,5)+", "12(3)" → { volRanges, issueRanges }
- *   括弧外の + は「最後の号範囲を開放端にする」として処理する
- * @param {string} token
- * @returns {{ volRanges: {start:number,end:number}[], issueRanges: {start:number,end:number}[]|null }}
- */
-function parseToken(token) {
-  const parenMatch = token.match(/^([^(]+)\(([^)]+)\)(\+?)$/);
-  if (parenMatch) {
-    const volRanges = parseRanges(parenMatch[1]);
-    const issueRanges = parseRanges(parenMatch[2]);
-    if (parenMatch[3] === '+' && issueRanges.length > 0) {
-      issueRanges[issueRanges.length - 1].end = Infinity;
-    }
-    return { volRanges, issueRanges };
-  }
-  return { volRanges: parseRanges(token), issueRanges: null };
-}
-
-/**
- * 所蔵巻号文字列に (targetVol, targetIssue) が含まれるか判定する
- * @param {string} volumeStr   CiNii の ll-volume.hlv テキスト
- * @param {number} targetVol   検索する巻
- * @param {number|null} targetIssue 検索する号（null なら巻のみで照合）
- * @returns {boolean}
- */
-function isHeld(volumeStr, targetVol, targetIssue) {
-  for (const token of splitTokens(volumeStr)) {
-    const { volRanges, issueRanges } = parseToken(token);
-    if (!inRanges(volRanges, targetVol)) continue;
-    // 巻がマッチした
-    if (targetIssue === null) return true;           // 号不問 → YES
-    if (issueRanges === null) return true;           // 当該巻は全号所蔵 → YES
-    if (inRanges(issueRanges, targetIssue)) return true; // 号もマッチ → YES
-  }
-  return false;
-}
-
-// ─── 巻次パース（図書） ───────────────────────────────────────────────────────
-
-/**
- * 巻次文字列を比較用に正規化する（全半角・大小文字・空白のゆれを吸収）
- * @param {string} s
- * @returns {string}
- */
-function normalizeVol(s) {
-  return (s || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
-}
-
-/**
- * 入力された巻次をカンマ区切りで分割する（全角カンマ・読点も区切りとして扱う）
- * 例: "上, 上巻、下巻" → ["上", "上巻", "下巻"]
- * @param {string} target
- * @returns {string[]}
- */
-function splitVolumeTargets(target) {
-  return (target || '').split(/[,，、]/).map((s) => s.trim()).filter((s) => s);
-}
-
-/**
- * 図書の巻次を部分一致で照合する（複数指定した場合は OR 条件）
- * 同一書誌でも館によって "上" / "上巻" / "VOL.下" のように表記が揺れるため部分一致とする
- * @param {string[]} volumeStrs 館が持つ巻次の一覧
- * @param {string} target       入力された巻次（空文字なら巻次不問／カンマ区切りで複数可）
- * @returns {boolean}
- */
-function matchesBookVolume(volumeStrs, target) {
-  const targets = splitVolumeTargets(target);
-  if (targets.length === 0) return true;     // 未入力 → その書誌の全巻次を所蔵とみなす
-  if (volumeStrs.length === 0) return false; // 巻次情報を持たない館は除外
-  const normalized = volumeStrs.map(normalizeVol);
-  return targets.some((t) => {
-    const n = normalizeVol(t);
-    return normalized.some((v) => v.includes(n));
-  });
-}
-
-/** 同一条件の判定に使うキー（順番や区切り記号の違いを吸収する） */
-function volumeTargetKey(target) {
-  return splitVolumeTargets(target).map(normalizeVol).sort().join(',');
-}
-
-/** 登録時に確定する表示用の巻次ラベル */
-function volumeTargetLabel(target) {
-  const targets = splitVolumeTargets(target);
-  return targets.length === 0 ? '巻次指定なし' : targets.join('・');
-}
+// 巻号・巻次の照合と地域の対応表は lib/holdings.js にある
 
 // ─── DOM 要素 ────────────────────────────────────────────────────────────────
 
@@ -185,6 +40,8 @@ const addBtn = document.getElementById('add-btn');
 const journalListEl = document.getElementById('journal-list');
 const calcBtn = document.getElementById('calc-btn');
 const resultEl = document.getElementById('result');
+const hitPreviewEl = document.getElementById('hit-preview');
+const legacyNoticeEl = document.getElementById('legacy-notice');
 const clearAllBtn = document.getElementById('clear-all-btn');
 
 /** 対象ページでのみ使う領域の表示・非表示を切り替える */
@@ -199,6 +56,9 @@ let currentPageData = null;
 
 /** 現在開いているページの種別（対象外のページでは null） */
 let currentPageType = null;
+
+/** 現在のページの所蔵を館ごとにまとめたもの（groupHoldings の結果） */
+let currentHoldings = [];
 
 /** そのページに実在する巻次（図書の入力候補） */
 let volumeCandidates = [];
@@ -290,10 +150,12 @@ async function loadCurrentPage() {
     }
 
     currentPageData = data;
+    currentHoldings = groupHoldings(data.libraries);
     journalTitleEl.textContent = data.title;
     fillVolumeOptions(data);
-    showStatus(`${data.libraries.length}館の所蔵情報を検出しました`, 'success');
+    showStatus(`${currentHoldings.length}館の所蔵情報を検出しました`, 'success');
     addBtn.disabled = false;
+    updateHitPreview();
   } catch (_e) {
     applyNoPageType('CiNii Books / CiNii Research の詳細ページを開いてください');
   }
@@ -338,6 +200,7 @@ function applyPageTypeUi(pageType) {
   volumeCandidates = [];
   volumeOptionsRenderedBase = null;
   volumeOptionsEl.replaceChildren();
+  hitPreviewEl.textContent = '';
 }
 
 /** 図書の場合、そのページに実在する巻次を入力候補として提示する */
@@ -349,7 +212,7 @@ function fillVolumeOptions(data) {
 
   const values = new Set();
   for (const lib of data.libraries) {
-    for (const v of libVolumeStrs(lib)) values.add(v);
+    for (const v of lib.volumeStrs) values.add(v);
   }
 
   volumeCandidates = [...values].sort((a, b) => a.localeCompare(b, 'ja'));
@@ -402,7 +265,19 @@ function renderVolumeOptions() {
 
 targetVolumeInput.addEventListener('input', () => {
   if (isBookType(currentPageType)) renderVolumeOptions();
+  updateHitPreview();
 });
+targetIssueInput.addEventListener('input', updateHitPreview);
+
+/** 入力中の条件で、このページの何館がヒットするかを表示する */
+function updateHitPreview() {
+  const cond = currentPageData
+    ? readCondition(isBookType(currentPageType), targetVolumeInput.value, targetIssueInput.value)
+    : { error: true };
+  hitPreviewEl.textContent = cond.error
+    ? ''
+    : `この条件で ${currentHoldings.filter((h) => holdingMatches(h, cond)).length}館がヒット`;
+}
 
 /**
  * ステータス表示
@@ -424,10 +299,56 @@ function showStatus(message, type, linkUrl) {
   }
 }
 
-/** 旧形式（volumeStr）の content.js が応答した場合にも対応する */
-function libVolumeStrs(lib) {
-  if (Array.isArray(lib.volumeStrs)) return lib.volumeStrs;
-  return lib.volumeStr ? [lib.volumeStr] : [];
+
+/**
+ * 巻号（巻次）の入力を照合条件にする
+ * @param {boolean} book 図書か
+ * @param {string} volumeValue 巻（図書は巻次）の入力
+ * @param {string} issueValue  号の入力
+ * @returns {{ book: boolean, targetVolume: number|null, targetIssue: number|null, targetVolumeLabel: string, label: string }
+ *          |{ error: string }}
+ */
+function readCondition(book, volumeValue, issueValue) {
+  if (book) {
+    const targetVolumeLabel = volumeValue.trim();
+    return {
+      book, targetVolume: null, targetIssue: null, targetVolumeLabel,
+      label: volumeTargetLabel(targetVolumeLabel),
+    };
+  }
+  const targetVolume = parseInt(volumeValue, 10);
+  if (isNaN(targetVolume) || targetVolume < 1) return { error: '巻（1以上の整数）を入力してください' };
+  const targetIssueRaw = parseInt(issueValue, 10);
+  const targetIssue = (!isNaN(targetIssueRaw) && targetIssueRaw >= 1) ? targetIssueRaw : null;
+  return {
+    book, targetVolume, targetIssue, targetVolumeLabel: '',
+    label: targetIssue != null ? `${targetVolume}巻${targetIssue}号` : `${targetVolume}巻`,
+  };
+}
+
+/** 登録済みエントリと条件が同じか（同じ資料の同じ巻号は1件にまとめる） */
+function sameCondition(entry, cond) {
+  return cond.book
+    ? volumeTargetKey(entry.targetVolumeLabel || '') === volumeTargetKey(cond.targetVolumeLabel)
+    : entry.targetVolume === cond.targetVolume && entry.targetIssue === cond.targetIssue;
+}
+
+/**
+ * v2.2 以降の登録か。v2.2 からはページの全館の所蔵（holdings）を保存し、
+ * ヒットする館はその都度計算する。それより前は登録時に絞り込んだ館（libraries）だけを持つ
+ */
+function hasHoldings(entry) {
+  return Array.isArray(entry.holdings);
+}
+
+/**
+ * エントリの条件を満たす館の一覧
+ * @returns {{ libraryId: string, name: string, region: string, grp?: string, records?: Array }[]}
+ */
+function entryHits(entry) {
+  if (!hasHoldings(entry)) return entry.libraries || [];
+  const cond = { book: isBookType(currentPageType), ...entry };
+  return entry.holdings.filter((h) => holdingMatches(h, cond));
 }
 
 /** 登録済みエントリの表示用ラベル（旧データには label が無いため補完する） */
@@ -446,74 +367,25 @@ function entryLabel(entry) {
 addBtn.addEventListener('click', async () => {
   if (!currentPageData) return;
 
-  const book = isBookType(currentPageType);
-
-  let targetVolume = null;
-  let targetIssue = null;
-  let targetVolumeLabel = '';
-  let label = '';
-
-  if (book) {
-    targetVolumeLabel = targetVolumeInput.value.trim();
-    label = volumeTargetLabel(targetVolumeLabel);
-  } else {
-    targetVolume = parseInt(targetVolumeInput.value, 10);
-    if (isNaN(targetVolume) || targetVolume < 1) {
-      alert('巻（1以上の整数）を入力してください');
-      return;
-    }
-    const targetIssueRaw = parseInt(targetIssueInput.value, 10);
-    targetIssue = (!isNaN(targetIssueRaw) && targetIssueRaw >= 1) ? targetIssueRaw : null;
-    label = targetIssue != null ? `${targetVolume}巻${targetIssue}号` : `${targetVolume}巻`;
-  }
-
-  // ライブラリIDでグループ化（同館複数エントリに対応）
-  const libraryMap = new Map();
-  for (const lib of currentPageData.libraries) {
-    if (!libraryMap.has(lib.libraryId)) {
-      libraryMap.set(lib.libraryId, {
-        name: lib.name,
-        libraryId: lib.libraryId,
-        region: lib.region || '',
-        volumeStrs: [],
-      });
-    }
-    libraryMap.get(lib.libraryId).volumeStrs.push(...libVolumeStrs(lib));
-  }
-
-  // 対象巻号（巻次）を所蔵する館を抽出
-  const qualifiedLibraries = [];
-  for (const libInfo of libraryMap.values()) {
-    const held = book
-      ? matchesBookVolume(libInfo.volumeStrs, targetVolumeLabel)
-      : libInfo.volumeStrs.some((vs) => isHeld(vs, targetVolume, targetIssue));
-    if (held) {
-      qualifiedLibraries.push({
-        name: libInfo.name,
-        libraryId: libInfo.libraryId,
-        region: libInfo.region,
-      });
-    }
+  const cond = readCondition(isBookType(currentPageType), targetVolumeInput.value, targetIssueInput.value);
+  if (cond.error) {
+    alert(cond.error);
+    return;
   }
 
   // storage に保存（同一URLかつ同一巻号（巻次）の場合は上書き、異なれば別エントリとして追加）
   const entries = await getEntries();
-  const existingIdx = entries.findIndex((e) => {
-    if (e.url !== currentPageData.url) return false;
-    return book
-      ? volumeTargetKey(e.targetVolumeLabel || '') === volumeTargetKey(targetVolumeLabel)
-      : e.targetVolume === targetVolume && e.targetIssue === targetIssue;
-  });
+  const existingIdx = entries.findIndex((e) => e.url === currentPageData.url && sameCondition(e, cond));
 
   const entry = {
     id: existingIdx >= 0 ? entries[existingIdx].id : Date.now().toString(),
     title: currentPageData.title,
     url: currentPageData.url,
-    label,
-    targetVolume,
-    targetIssue,
-    targetVolumeLabel,
-    libraries: qualifiedLibraries,
+    label: cond.label,
+    targetVolume: cond.targetVolume,
+    targetIssue: cond.targetIssue,
+    targetVolumeLabel: cond.targetVolumeLabel,
+    holdings: currentHoldings,
   };
 
   if (existingIdx >= 0) {
@@ -526,15 +398,16 @@ addBtn.addEventListener('click', async () => {
   await renderJournalList();
   resultEl.replaceChildren();
 
-  if (book) {
+  if (cond.book) {
     // 次の巻次を選び直せるよう、選択済みの巻次を空にして候補も戻す
     targetVolumeInput.value = '';
     renderVolumeOptions();
+    updateHitPreview();
   }
 
   const action = existingIdx >= 0 ? '更新' : '追加';
   showStatus(
-    `${action}完了：${label}を所蔵している館は ${qualifiedLibraries.length}館です`,
+    `${action}完了：${cond.label}を所蔵している館は ${entryHits(entry).length}館です`,
     'success'
   );
 });
@@ -550,6 +423,7 @@ async function renderJournalList() {
   const entries = await getEntries();
 
   journalListEl.replaceChildren();
+  legacyNoticeEl.hidden = entries.every(hasHoldings);
 
   if (entries.length === 0) {
     const emptyMsg = document.createElement('p');
@@ -575,12 +449,28 @@ async function renderJournalList() {
     titleLink.title = entry.title;
     titleLink.textContent = entry.title;
 
-    const metaSpan = document.createElement('span');
-    metaSpan.className = 'journal-meta';
-    metaSpan.textContent = `${entryLabel(entry)} ／ ${entry.libraries.length}館所蔵`;
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'journal-meta';
+
+    // 巻号（巻次）そのものをボタンにして、押すとその場で修正できるようにする
+    // 旧形式は全館の所蔵を持たないため、条件を変えて判定し直せない
+    let labelEl;
+    if (hasHoldings(entry)) {
+      labelEl = document.createElement('button');
+      labelEl.className = 'label-btn';
+      labelEl.title = 'クリックして巻号（巻次）を修正';
+      labelEl.textContent = entryLabel(entry);
+      labelEl.addEventListener('click', () => startEdit(metaDiv, entry));
+    } else {
+      labelEl = document.createElement('span');
+      labelEl.textContent = entryLabel(entry);
+    }
+    const countSpan = document.createElement('span');
+    countSpan.textContent = `${entryHits(entry).length}館所蔵` + (hasHoldings(entry) ? '' : '（旧形式）');
+    metaDiv.append(labelEl, '／', countSpan);
 
     infoDiv.appendChild(titleLink);
-    infoDiv.appendChild(metaSpan);
+    infoDiv.appendChild(metaDiv);
 
     const excludeCheck = document.createElement('input');
     excludeCheck.type = 'checkbox';
@@ -619,6 +509,77 @@ async function renderJournalList() {
   });
 }
 
+/**
+ * 登録済み資料の巻号（巻次）をその場で修正する
+ * 登録時に保存した全館の所蔵で判定し直すので、ページを開き直す必要はない
+ * @param {HTMLElement} metaDiv 巻号と館数を表示している行
+ * @param {object} entry
+ */
+function startEdit(metaDiv, entry) {
+  const book = isBookType(currentPageType);
+  const form = document.createElement('form');
+  form.className = 'edit-form';
+
+  const makeInput = (value, wide) => {
+    const input = document.createElement('input');
+    input.type = wide ? 'text' : 'number';
+    input.min = '1';
+    input.value = value ?? '';
+    if (wide) input.className = 'wide';
+    return input;
+  };
+  const volInput = makeInput(book ? entry.targetVolumeLabel : entry.targetVolume, book);
+  const issueInput = makeInput(entry.targetIssue, false);
+  if (book) {
+    volInput.placeholder = '巻次（カンマ区切りでOR）';
+    form.append(volInput);
+  } else {
+    issueInput.placeholder = '任意';
+    form.append(volInput, '巻', issueInput, '号');
+  }
+
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'submit';
+  saveBtn.className = 'edit-save';
+  saveBtn.textContent = '保存';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'edit-cancel';
+  cancelBtn.textContent = '取消';
+  cancelBtn.addEventListener('click', () => renderJournalList());
+  form.append(saveBtn, cancelBtn);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cond = readCondition(book, volInput.value, issueInput.value);
+    if (cond.error) {
+      alert(cond.error);
+      return;
+    }
+    const entries = await getEntries();
+    if (entries.some((x) => x.id !== entry.id && x.url === entry.url && sameCondition(x, cond))) {
+      alert(`${cond.label}はすでに登録されています`);
+      return;
+    }
+    const target = entries.find((x) => x.id === entry.id);
+    if (!target) return;
+    Object.assign(target, {
+      label: cond.label,
+      targetVolume: cond.targetVolume,
+      targetIssue: cond.targetIssue,
+      targetVolumeLabel: cond.targetVolumeLabel,
+    });
+    await setEntries(entries);
+    await renderJournalList();
+    // 計算結果を表示中なら、修正後の条件で計算し直す
+    if (resultEl.childElementCount) await runCalculation(entries);
+  });
+
+  metaDiv.replaceChildren(form);
+  volInput.focus();
+  volInput.select();
+}
+
 async function deleteEntry(id) {
   excludedIds.delete(id);
   const entries = await getEntries();
@@ -629,6 +590,9 @@ async function deleteEntry(id) {
 
 // ─── 共通所蔵館の計算 ─────────────────────────────────────────────────────────
 
+/** 直近の計算結果（館情報パネルで、その館の所蔵を表示するために使う） */
+let lastCalc = { entries: [], libraries: new Map() };
+
 async function runCalculation(entries) {
   const activeEntries = entries.filter((e) => !excludedIds.has(e.id));
   if (activeEntries.length === 0) {
@@ -636,8 +600,9 @@ async function runCalculation(entries) {
     return;
   }
 
-  // 各資料の所蔵館IDの集合を作り、積集合を求める
-  const librarySets = activeEntries.map((e) => new Set(e.libraries.map((l) => l.libraryId)));
+  // 各資料のヒット館IDの集合を作り、積集合を求める
+  const hitsPerEntry = activeEntries.map(entryHits);
+  const librarySets = hitsPerEntry.map((hits) => new Set(hits.map((l) => l.libraryId)));
   let commonIds = new Set(librarySets[0]);
   for (let i = 1; i < librarySets.length; i++) {
     for (const id of commonIds) {
@@ -645,28 +610,23 @@ async function runCalculation(entries) {
     }
   }
 
-  // 館名・地域コードを引く（最初に見つかったエントリを使用）
-  const nameMap = new Map();
-  const regionMap = new Map();
-  for (const entry of activeEntries) {
-    for (const lib of entry.libraries) {
-      if (!nameMap.has(lib.libraryId)) nameMap.set(lib.libraryId, lib.name);
-      if (!regionMap.has(lib.libraryId)) regionMap.set(lib.libraryId, lib.region || '');
+  // 館名・地域コード・料金相殺を引く（最初に見つかったものを使う。相殺は旧形式に無いので補う）
+  const infoMap = new Map();
+  for (const hits of hitsPerEntry) {
+    for (const lib of hits) {
+      if (!commonIds.has(lib.libraryId)) continue;
+      const known = infoMap.get(lib.libraryId);
+      if (!known) {
+        infoMap.set(lib.libraryId, {
+          id: lib.libraryId, name: lib.name, region: lib.region || '', grp: lib.grp || '',
+        });
+      } else if (!known.grp && lib.grp) {
+        known.grp = lib.grp;
+      }
     }
   }
-
-  const commonLibraries = [...commonIds]
-    .map((id) => ({ id, name: nameMap.get(id) || id, region: regionMap.get(id) || '' }))
-    .sort((a, b) => {
-      const ra = parseInt(a.region, 10);
-      const rb = parseInt(b.region, 10);
-      const aIsNum = !isNaN(ra);
-      const bIsNum = !isNaN(rb);
-      if (aIsNum && bIsNum && ra !== rb) return ra - rb;
-      if (aIsNum && !bIsNum) return -1;
-      if (!aIsNum && bIsNum) return 1;
-      return a.name.localeCompare(b.name, 'ja');
-    });
+  const commonLibraries = sortLibraries([...infoMap.values()]);
+  lastCalc = { entries: activeEntries, libraries: infoMap };
 
   if (commonLibraries.length === 0) {
     resultEl.replaceChildren();
@@ -680,31 +640,34 @@ async function runCalculation(entries) {
   // result DOM構築
   resultEl.replaceChildren();
 
-  const resultHeader = document.createElement('div');
-  resultHeader.className = 'result-header';
-
-  const conditionP = document.createElement('p');
-  conditionP.className = 'result-condition';
-  conditionP.textContent = '対象資料：';
-  resultHeader.appendChild(conditionP);
-
-  const conditionList = document.createElement('ul');
-  conditionList.className = 'condition-list';
-  for (const entry of activeEntries) {
-    const li = document.createElement('li');
-    li.textContent = `${entry.title}（${entryLabel(entry)}）`;
-    conditionList.appendChild(li);
-  }
-  resultHeader.appendChild(conditionList);
-  resultEl.appendChild(resultHeader);
-
   const heading = document.createElement('h3');
   heading.textContent = `共通所蔵館（${commonLibraries.length}件）`;
   resultEl.appendChild(heading);
 
+  const regionCounts = new Map();
+  for (const lib of commonLibraries) {
+    const { region } = regionOf(lib.region);
+    regionCounts.set(region, (regionCounts.get(region) || 0) + 1);
+  }
+
   const libList = document.createElement('ul');
   libList.className = 'common-libraries-list';
+  let prevRegion = null;
   for (const lib of commonLibraries) {
+    const { region, pref } = regionOf(lib.region);
+
+    // 地域が変わるところに見出しを入れる
+    if (region !== prevRegion) {
+      const regionLi = document.createElement('li');
+      regionLi.className = 'region-heading';
+      const countSpan = document.createElement('span');
+      countSpan.className = 'region-count';
+      countSpan.textContent = regionCounts.get(region);
+      regionLi.append(region, countSpan);
+      libList.appendChild(regionLi);
+      prevRegion = region;
+    }
+
     const li = document.createElement('li');
 
     const row = document.createElement('div');
@@ -724,14 +687,21 @@ async function runCalculation(entries) {
     nameBtn.className = 'lib-name-btn';
     nameBtn.dataset.fa = lib.id;
     nameBtn.setAttribute('aria-expanded', 'false');
-    nameBtn.title = '館情報（ILL の受付可否・料金・送付方法）を開く';
+    nameBtn.title = '所蔵と館情報（ILL の受付可否・料金・送付方法）を開く';
     nameBtn.textContent = lib.name;
+
+    row.append(copyBtn, faSpan, nameBtn);
+    if (pref) {
+      const prefSpan = document.createElement('span');
+      prefSpan.className = 'lib-pref';
+      prefSpan.textContent = pref;
+      row.appendChild(prefSpan);
+    }
 
     const detail = document.createElement('div');
     detail.className = 'lib-detail';
     detail.hidden = true;
 
-    row.append(copyBtn, faSpan, nameBtn);
     li.append(row, detail);
     libList.appendChild(li);
   }
@@ -800,6 +770,7 @@ async function requestFacility(libraryId) {
 
 /**
  * 館名ボタンの開閉
+ * 所蔵（保存済みのデータ）はすぐに描画し、館情報は取得してから描画する
  * @param {HTMLButtonElement} btn
  */
 async function toggleFacility(btn) {
@@ -815,105 +786,223 @@ async function toggleFacility(btn) {
   btn.setAttribute('aria-expanded', 'true');
   if (detail.dataset.loaded === 'true') return;
 
+  const libraryId = btn.dataset.fa;
+  const facilityBox = document.createElement('div');
   const loading = document.createElement('p');
   loading.className = 'lib-detail-note';
   loading.textContent = '館情報を取得中…';
-  detail.replaceChildren(loading);
+  facilityBox.appendChild(loading);
+  detail.replaceChildren(renderLibraryHoldings(libraryId), facilityBox);
 
-  const result = await requestFacility(btn.dataset.fa);
-  renderFacility(detail, btn.dataset.fa, result);
+  const result = await requestFacility(libraryId);
+  renderFacility(facilityBox, libraryId, result);
   if (result.ok) detail.dataset.loaded = 'true';
+}
+
+/** 見出し付きのブロック */
+function detailBlock(title, className) {
+  const block = document.createElement('div');
+  block.className = `detail-block ${className || ''}`.trim();
+  const h = document.createElement('h5');
+  h.className = 'detail-block-title';
+  h.textContent = title;
+  block.appendChild(h);
+  return block;
+}
+
+/**
+ * その館の、計算対象の各資料の所蔵（年次と所蔵巻号）
+ * 末尾の + や年次をそのまま見せ、継続受入の記載が古くないかを確認できるようにする
+ * @param {string} libraryId
+ * @returns {HTMLElement}
+ */
+function renderLibraryHoldings(libraryId) {
+  const block = detailBlock('所蔵');
+  const book = isBookType(currentPageType);
+
+  for (const entry of lastCalc.entries) {
+    const holding = hasHoldings(entry) && entry.holdings.find((h) => h.libraryId === libraryId);
+
+    const item = document.createElement('div');
+    item.className = 'holding-item';
+    const title = document.createElement('p');
+    title.className = 'holding-title';
+    title.textContent = `${entry.title}［${entryLabel(entry)}］`;
+    item.appendChild(title);
+
+    const lines = [];
+    for (const record of holding ? holding.records : []) {
+      const vols = book ? matchedBookVolumes(record.volumeStrs, entry.targetVolumeLabel) : record.volumeStrs;
+      if (vols.length === 0 && !record.years) continue;
+      lines.push([record.years && `[${record.years}]`, vols.join(book ? '、' : ', ')].filter(Boolean).join(' '));
+    }
+    for (const text of lines) {
+      const line = document.createElement('p');
+      line.className = 'holding-record';
+      line.textContent = text;
+      item.appendChild(line);
+    }
+    if (lines.length === 0) {
+      // 旧形式の登録や、巻次の無い図書（単巻本）では所蔵の行が出ない
+      const note = document.createElement('p');
+      note.className = 'lib-detail-note';
+      note.textContent = !holding ? '（旧形式の登録のため所蔵巻号はありません）'
+                       : book ? '（巻次の記載なし）' : '（所蔵巻号の記載なし）';
+      item.appendChild(note);
+    }
+    block.appendChild(item);
+  }
+  return block;
+}
+
+/**
+ * 館情報の表に固定の順で並べる項目（CiNii の「各種コード」のラベル → 表示名）
+ * 2項目ずつ横に並ぶので、各種コードの出現順を保ちつつ最後の行が海外ILLになるようにしてある
+ * 「料金相殺」は館情報ではなく所蔵館リストの属性（_type_grp）から取る
+ */
+const FACILITY_CODE_ROWS = [
+  ['機関ID', '機関ID'],
+  ['略称', '略称'],
+  ['CAT参加', 'CAT参加'],
+  ['ILL参加', 'ILL参加'],
+  ['図書館間現物貸借サービス', '現物貸借'],
+  ['図書館間複写サービス', '複写'],
+  ['図書館間FAXサービス', 'FAX'],
+  ['料金相殺', '料金相殺'],
+  ['日米ILL', '日米ILL'],
+  ['日韓ILL', '日韓ILL'],
+];
+
+/** 表に出さない項目（図書館ID は一覧に出ている） */
+const FACILITY_CODE_SKIP = ['図書館ID'];
+
+/** 可否の値に応じた色分け用クラス */
+function valueClass(value) {
+  if (value === '可' || value === '参加') return 'ok';
+  if (value === '不可' || value === '不参加') return 'ng';
+  return '';
+}
+
+/**
+ * dt/dd の組を dl に足す
+ * @param {HTMLElement} dl
+ * @param {string} label
+ * @param {string|Node} value
+ * @param {string} [cls] dd に付けるクラス
+ */
+function appendPair(dl, label, value, cls) {
+  const dt = document.createElement('dt');
+  dt.textContent = label;
+  const dd = document.createElement('dd');
+  if (cls) dd.className = cls;
+  dd.append(value);
+  dl.append(dt, dd);
+}
+
+/**
+ * テキスト中の URL をリンクにして要素に追加する
+ * @param {HTMLElement} el
+ * @param {string} text
+ * @param {string[]} [links] 本文に出ていない URL（アンカーのテキストが省略されている場合）
+ */
+function appendLinkified(el, text, links = []) {
+  const parts = text.split(/(https?:\/\/[^\s<>"'()（）]+)/);
+  parts.forEach((part, i) => {
+    if (i % 2 === 0) {
+      if (part) el.append(part);
+      return;
+    }
+    el.appendChild(externalLink(part));
+  });
+  for (const href of links) {
+    if (text.includes(href)) continue;
+    el.append(' ', externalLink(href));
+  }
+}
+
+function externalLink(href) {
+  const a = document.createElement('a');
+  a.href = href;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.textContent = href;
+  return a;
 }
 
 /**
  * 館情報を描画する
- * @param {HTMLElement} detail
+ * @param {HTMLElement} box
  * @param {string} libraryId
  * @param {{ ok: boolean, facility?: object, reason?: string }} result
  */
-function renderFacility(detail, libraryId, result) {
-  detail.replaceChildren();
+function renderFacility(box, libraryId, result) {
+  box.replaceChildren();
 
   if (!result.ok) {
     const msg = document.createElement('p');
     msg.className = 'lib-detail-error';
     msg.textContent = FACILITY_ERRORS[result.reason]
       || `館情報を取得できませんでした（${result.reason}）`;
-    detail.appendChild(msg);
+    box.appendChild(msg);
 
     // 取得できない主な理由は CiNii 以外のタブでポップアップを開いた場合で、
     // URL自体は生きている。CiNii Books の /library/ は2027年3月に消えるため、
     // 終了後も残る CiNii Research 側を案内する（素のHTML断片が開く）
-    const fallback = document.createElement('a');
+    const fallback = externalLink(`https://cir.nii.ac.jp/api/facility/${libraryId}`);
     fallback.className = 'lib-detail-fallback';
-    fallback.href = `https://cir.nii.ac.jp/api/facility/${libraryId}`;
-    fallback.target = '_blank';
     fallback.textContent = 'CiNii Research の館情報を別タブで開く';
-    detail.appendChild(fallback);
+    box.appendChild(fallback);
     return;
   }
 
   const f = result.facility;
 
-  const contact = [
-    [f.zip, f.address].filter(Boolean).join(' '),
-    f.tel && `TEL ${f.tel}`,
-    f.fax && `FAX ${f.fax}`,
-  ].filter(Boolean).join(' / ');
-  if (contact) {
-    const p = document.createElement('p');
-    p.className = 'lib-detail-contact';
-    p.textContent = contact;
-    detail.appendChild(p);
+  // ── 各種コード（どの館も同じ項目なので、位置を固定した表にする）
+  const codeBlock = detailBlock('館情報');
+  const codeMap = new Map(f.codes.map((c) => [c.label, c.value]));
+  const grp = lastCalc.libraries.get(libraryId)?.grp;
+  codeMap.set('料金相殺', grp === 'A' ? '可' : grp === 'N' ? '不可' : '');
+
+  const codeGrid = document.createElement('dl');
+  codeGrid.className = 'info-grid';
+  for (const [key, label] of FACILITY_CODE_ROWS) {
+    const value = codeMap.get(key) || '—';
+    appendPair(codeGrid, label, value, valueClass(value));
   }
-
-  if (f.codes.length) {
-    const codeList = document.createElement('ul');
-    codeList.className = 'lib-code-list';
-    for (const code of f.codes) {
-      // FA番号は一覧側に出ているので省く
-      if (code.label === '図書館ID') continue;
-      const li = document.createElement('li');
-      li.className = code.value === '可' || code.value === '参加' ? 'ok'
-                   : code.value === '不可' || code.value === '不参加' ? 'ng'
-                   : '';
-      li.textContent = `${code.label}：${code.value}`;
-      codeList.appendChild(li);
-    }
-    if (codeList.childElementCount) detail.appendChild(codeList);
+  // 想定外の項目も落とさず末尾に出す
+  const known = new Set([...FACILITY_CODE_ROWS.map(([key]) => key), ...FACILITY_CODE_SKIP]);
+  for (const c of f.codes) {
+    if (!known.has(c.label)) appendPair(codeGrid, c.label, c.value, valueClass(c.value));
   }
+  codeBlock.appendChild(codeGrid);
 
-  for (const para of f.paragraphs) {
-    // 「===== 複写 =====」のような区切り行は見出しとして扱う
-    const headingMatch = para.text.match(/^=+\s*(.+?)\s*=+$/);
-    if (headingMatch) {
-      const h = document.createElement('h5');
-      h.className = 'lib-detail-heading';
-      h.textContent = headingMatch[1];
-      detail.appendChild(h);
-      continue;
+  const contact = document.createElement('dl');
+  contact.className = 'info-contact';
+  const address = [f.zip, f.address].filter(Boolean).join(' ');
+  if (address) appendPair(contact, '住所', address);
+  if (f.tel) appendPair(contact, 'TEL', f.tel);
+  if (f.fax) appendPair(contact, 'FAX', f.fax);
+  if (contact.childElementCount) codeBlock.appendChild(contact);
+  box.appendChild(codeBlock);
+
+  // ── 利用方法（館ごとに書き方が違うので、項目名と内容に分けて並べるだけにする）
+  // 利用案内と ILL への振り分けは lib/holdings.js の groupFacilityParagraphs
+  for (const group of groupFacilityParagraphs(f.paragraphs)) {
+    const block = detailBlock(group.title, group.ill ? 'block-ill' : 'block-visit');
+    const dl = document.createElement('dl');
+    dl.className = 'info-lines';
+    for (const row of group.rows) {
+      const dd = document.createElement('dd');
+      appendLinkified(dd, row.value, row.links);
+      if (row.key) {
+        appendPair(dl, row.key, dd);
+      } else {
+        dd.className = 'full';
+        dl.appendChild(dd);
+      }
     }
-
-    const p = document.createElement('p');
-    p.className = 'lib-detail-line';
-    if (para.text) p.textContent = para.text;
-    for (const href of para.links) {
-      // 本文中に URL がそのまま出ている場合はリンクを重複させない
-      if (para.text.includes(href)) continue;
-      const a = document.createElement('a');
-      a.href = href;
-      a.target = '_blank';
-      a.textContent = href;
-      p.append(' ', a);
-    }
-    if (p.textContent.trim()) detail.appendChild(p);
-  }
-
-  if (!detail.childElementCount) {
-    const note = document.createElement('p');
-    note.className = 'lib-detail-note';
-    note.textContent = 'この館の館情報は登録されていません';
-    detail.appendChild(note);
+    block.appendChild(dl);
+    box.appendChild(block);
   }
 }
 

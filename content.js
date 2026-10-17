@@ -127,7 +127,11 @@ function extractHoldingsData() {
       name: lib.name,
       libraryId: lib.libraryId,
       volumeStrs: extractVolumeStrs(item, isBook),
+      // 所蔵年次（雑誌のみ。例 "1948-2011"）
+      years: item.querySelector('.hlyr')?.textContent.trim() || '',
       region: item.getAttribute('_kc') || '',
+      // 料金相殺制度への参加（"A" = 参加 / "N" = 不参加）
+      grp: item.getAttribute('_type_grp') || '',
     });
   });
 
@@ -278,8 +282,8 @@ async function fetchFacility(libraryId) {
 // ポップアップからのメッセージを受信して所蔵データを返す
 // executeScript で複数回注入されても onMessage リスナーが重複しないようガードする
 // （ガード名にバージョンを含めることで、旧版が注入済みのタブでも新版が必ず登録される）
-if (!window.__ciniiCheckerInjected_v3) {
-  window.__ciniiCheckerInjected_v3 = true;
+if (!window.__ciniiCheckerInjected_v4) {
+  window.__ciniiCheckerInjected_v4 = true;
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.action === 'getHoldingsData') {
       sendResponse(extractHoldingsData());
